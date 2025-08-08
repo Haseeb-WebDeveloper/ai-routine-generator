@@ -15,7 +15,8 @@ import {
   X,
   LogOut,
   Mail,
-  Edit
+  Edit,
+  Package
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -63,6 +64,7 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
     { id: 'upload-csv', label: 'Upload CSV', icon: Upload },
     { id: 'campaigns', label: 'Campaigns', icon: Mail },
     { id: 'email-templates', label: 'Email Templates', icon: Edit },
+    { id: 'products', label: 'Products', icon: Package },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
 

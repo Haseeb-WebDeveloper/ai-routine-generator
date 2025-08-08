@@ -8,6 +8,7 @@ import CSVUploadForm from '@/components/admin/CSVUploadForm'
 import UsersTable from '@/components/admin/UsersTable'
 import Campaigns from '@/components/admin/Campaigns'
 import EmailTemplates from '@/components/admin/EmailTemplates'
+import Products from '@/components/admin/Products'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, Users, Mail, TrendingUp } from 'lucide-react'
 
@@ -28,6 +29,8 @@ export default function AdminDashboard() {
         return <Campaigns />
       case 'email-templates':
         return <EmailTemplates />
+      case 'products':
+        return <Products />
       case 'settings':
         return <SettingsTab />
       default:

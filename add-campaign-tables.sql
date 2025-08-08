@@ -98,7 +98,7 @@ Your personalized routine is waiting for you! It only takes a minute to complete
 • Expert skincare tips
 • Ongoing support
 
-Click here to complete your quiz now:
+Click here to complete your quiz now: 
 
 {{LINK}}
 
