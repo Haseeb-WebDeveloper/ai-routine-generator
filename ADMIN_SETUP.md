@@ -163,7 +163,7 @@ Navigate to `http://localhost:3000/admin` to access the admin dashboard.
 
 The system generates unique links for each user that look like:
 ```
-http://localhost:3000/quiz?email=user@example.com&token=encoded_token
+http://localhost:3000/validate?email=user@example.com&token=encoded_token
 ```
 
 You can integrate with any email service (Bravo, SendGrid, etc.) to send these links to users.

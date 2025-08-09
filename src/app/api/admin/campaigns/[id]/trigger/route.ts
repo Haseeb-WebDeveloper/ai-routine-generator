@@ -125,7 +125,7 @@ export async function POST(
         // Generate unique quiz link using user's created_at timestamp for consistency
         // Fallback to current timestamp if created_at is not available
         const timestamp = user.created_at || new Date().toISOString()
-        const uniqueLink = `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(user.email)}&token=${btoa(user.email + timestamp)}`
+        const uniqueLink = `${process.env.NEXT_PUBLIC_APP_URL}/validate?email=${encodeURIComponent(user.email)}&token=${btoa(user.email + timestamp)}`
 
         console.log(`Sending email to: ${user.email}`)
         console.log(`Unique link: ${uniqueLink}`)

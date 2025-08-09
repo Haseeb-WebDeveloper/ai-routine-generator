@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
               email,
               is_active: true,
               quiz_completed: false,
-              unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(email)}&token=${btoa(email + Date.now())}`
+              unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/validate?email=${encodeURIComponent(email)}&token=${btoa(email + Date.now())}`
             }))
 
             const { data: insertedUsers, error } = await supabase
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             resolve(NextResponse.json({ error: 'Internal server error' }, { status: 500 }))
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           resolve(NextResponse.json({ 
             error: `CSV parsing error: ${error.message}` 
           }, { status: 400 }))

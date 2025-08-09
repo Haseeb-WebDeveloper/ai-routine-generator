@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       email,
       is_active: true,
       quiz_completed: false,
-      unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(email)}&token=${btoa(email + Date.now())}`
+      unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/validate?email=${encodeURIComponent(email)}&token=${btoa(email + Date.now())}`
     }))
 
     const { data: insertedUsers, error } = await supabase

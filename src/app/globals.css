@@ -121,7 +121,13 @@
   }
 }
 
-
 body {
   font-family: var(--font-dm-sans);
+}
+
+.chatbot-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
