@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
@@ -17,7 +17,7 @@ function getCookie(name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-export default function ValidatePage() {
+function ValidateContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
@@ -76,13 +76,33 @@ export default function ValidatePage() {
             {status === "error" && <XCircle className="h-5 w-5" />}
             <span>Validating</span>
           </CardTitle>
-          <CardDescription>We’re preparing your personalized quiz.</CardDescription>
+          <CardDescription>We're preparing your personalized quiz.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm">{message}</p>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ValidatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading...</span>
+            </CardTitle>
+            <CardDescription>Please wait while we load the validation page.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <ValidateContent />
+    </Suspense>
   );
 }
 
