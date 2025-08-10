@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   XCircle,
   Loader2,
+  Settings,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
@@ -87,41 +88,107 @@ export default function QuizPage() {
     setHasSentInitial(false); // Allow initial AI message to be sent again
   };
 
+  // Helper function to extract content from message parts
+  const extractMessageContent = (message: any) => {
+    if (typeof message.content === "string" && message.content) {
+      return message.content;
+    }
+    
+    if (Array.isArray(message.parts)) {
+      const textParts = [];
+      const toolParts = [];
+      
+      for (const part of message.parts) {
+        if (part.type === "text" && typeof part.text === "string") {
+          textParts.push(part.text);
+        } else if (part.type?.startsWith("tool-") && part.output) {
+          // Extract tool output
+          if (part.output.message) {
+            toolParts.push(part.output.message);
+          } else if (part.output.summary) {
+            toolParts.push(part.output.summary);
+          }
+        }
+      }
+      
+      return [...textParts, ...toolParts].join("");
+    }
+    
+    return "";
+  };
+
+  // Helper function to check if message contains active tools
+  const hasActiveTool = (message: any) => {
+    if (Array.isArray(message.parts)) {
+      return message.parts.some((part: any) => 
+        part.type?.startsWith("tool-") && part.state !== "output-available"
+      );
+    }
+    return false;
+  };
+
+  // Helper function to get tool name for display
+  const getToolDisplayName = (message: any) => {
+    if (Array.isArray(message.parts)) {
+      const toolPart = message.parts.find((part: any) => part.type?.startsWith("tool-"));
+      if (toolPart) {
+        const toolName = toolPart.type.replace("tool-", "");
+        if (toolName.includes("routine")) {
+          return "Generating Routine";
+        }
+        return `Using ${toolName}`;
+      }
+    }
+    return "Processing";
+  };
+
+  // ai response
+  console.log("ai response", messages[messages.length - 1]);
+
   return (
     <div className="min-h-screen py-8 flex items-center justify-center">
-      <div className="max-w-4xl w-full mx-auto px-4">
-        <div className="border-[2px] border-border p-6 rounded-2xl bg-foreground/[0.035]">
+      <div className="max-w-4xl w-full mx-auto lg:px-4 px-2">
+        <div className="border-[2px] border-border lg:p-6 px-2 py-4 rounded-2xl bg-foreground/[0.035]">
           <div>
             {/* Chat Messages */}
-            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto chatbot-scrollbar">
-              {messages.map((message: any, index: any) => (
+            <div className="space-y-4 mb-6 h-[60vh] max-h-[60vh] overflow-y-auto chatbot-scrollbar">
+              {messages.map((message: any, index: any) => {
                 // Hide only the initial start message (even if it includes USER_EMAIL)
-                (message.role !== "user" || (message.parts && message.parts.length > 0 && !String(message.parts[0].text || '').startsWith(START_PROMPT))) && (
+                const shouldHideMessage = message.role === "user" && 
+                  message.parts && 
+                  message.parts.length > 0 && 
+                  String(message.parts[0].text || '').startsWith(START_PROMPT);
+                
+                if (shouldHideMessage) return null;
+
+                const content = extractMessageContent(message);
+                const isToolActive = hasActiveTool(message);
+                const toolName = getToolDisplayName(message);
+
+                return (
                   <div
                     key={message.id || index}
                     className={`flex ${
                       message.role === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 border-b border-foreground/20`}
-                    >
-                      <p className="whitespace-pre-wrap">
-                        {typeof (message as any).content === "string" &&
-                        (message as any).content
-                          ? (message as any).content
-                          : Array.isArray((message as any).parts)
-                          ? (message as any).parts
-                              .map((part: any) =>
-                                typeof part.text === "string" ? part.text : ""
-                              )
-                              .join("")
-                          : ""}
-                      </p>
+                    <div className={`lg:max-w-[80%] max-w-[95%] px-4 py-3 border-b border-foreground/20`}>
+                      {/* Show tool execution indicator */}
+                      {isToolActive && (
+                        <div className="flex items-center space-x-2 mb-2 text-foreground">
+                          <Settings className="h-4 w-4 animate-spin" />
+                          <span className="text-sm font-medium">{toolName}...</span>
+                        </div>
+                      )}
+                      
+                      {/* Show message content */}
+                      {content && (
+                        <p className="whitespace-pre-wrap">{content}</p>
+                      )}
                     </div>
                   </div>
-                )
-              ))}
+                );
+              })}
 
               {/* Show loading indicator only while waiting for AI to start streaming */}
               {isLoading && (
@@ -149,14 +216,14 @@ export default function QuizPage() {
             )}
 
             {/* Input Form */}
-            <form className="flex space-x-2" onSubmit={handleFormSubmit}>
+            <form className="flex flex-col lg:flex-row space-x-2" onSubmit={handleFormSubmit}>
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message here..."
-                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-0"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-0 lg:mb-0 mb-2"
                 disabled={isLoading || isStreaming}
                 autoFocus
               />
@@ -172,6 +239,20 @@ export default function QuizPage() {
                 )}
               </Button>
             </form>
+
+            {/* Reset Button */}
+            {messages.length > 0 && (
+              <div className="hidden lg:block lg:mt-4 text-center">
+                <Button
+                  onClick={resetQuiz}
+                  variant="outline"
+                  size="sm"
+                  className="text-sm"
+                >
+                  Clear Chat
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

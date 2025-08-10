@@ -35,7 +35,6 @@ export async function aiAgent(messages: UIMessage[]) {
       model: cohere("command-r-plus"),
       messages: [{ role: "system", content: systemPrompt }, ...modelMessages],
       tools: agentTools,
-      toolChoice: "auto",
       onFinish: async (event) => {
         console.log("[AI] Stream finished:");
         console.log("[AI] Final text:", event.text);

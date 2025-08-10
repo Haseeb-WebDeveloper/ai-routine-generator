@@ -149,7 +149,7 @@ export const planAndSendRoutine = tool({
       return { 
         summary,
         emailSent: true,
-        message: `✅ Successfully sent your personalized skincare routine to ${email}! Check your inbox (and spam folder) for your custom routine.`
+        message: `Here is your personalized skincare routine: ${summary} \n\n We also have sent it to your email address: ${email}. Thank you for using our service!`
       }
       
     } catch (err) {
