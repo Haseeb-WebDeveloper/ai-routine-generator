@@ -2,6 +2,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
 export const sendMail = tool({
   description: `Use this tool to send a personalized skincare routine summary to a user's email address. This should be used after creating a complete skincare routine for the user.`,
   inputSchema: z.object({
@@ -21,9 +23,15 @@ export const sendMail = tool({
   }),
   execute: async ({ summary, email, subject }) => {
     try {
-      console.log("[TOOL/send_mail] sending to:", email)
+      console.log("[TOOL/send_mail] === Starting email send ===");
+      console.log("[TOOL/send_mail] baseUrl:", baseUrl);
+      console.log("[TOOL/send_mail] summary length:", summary?.length);
+      console.log("[TOOL/send_mail] summary preview:", summary?.substring(0, 100) + "...");
+      console.log("[TOOL/send_mail] sending to:", email);
+      console.log("[TOOL/send_mail] subject:", subject);
+      
       // Call your API route to send the email
-      const response = await fetch('/api/send-mail', {
+      const response = await fetch(`${baseUrl}/api/send-mail`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,11 +44,16 @@ export const sendMail = tool({
       });
 
       const result = await response.json();
+      
+      console.log("[TOOL/send_mail] API response status:", response.status);
+      console.log("[TOOL/send_mail] API response:", result);
 
       if (!response.ok) {
+        console.error("[TOOL/send_mail] API error:", result);
         throw new Error(result.error || 'Failed to send email');
       }
 
+      console.log("[TOOL/send_mail] === Email sent successfully ===");
       return `✅ Successfully sent your personalized skincare routine to ${email}! Check your inbox (and spam folder) for your custom routine.`;
       
     } catch (error) {

@@ -1,9 +1,10 @@
-import { tool } from "ai"
+import { tool, generateText } from "ai"
 import { z } from "zod"
+import { cohere } from "@ai-sdk/cohere"
 
 export const buildRoutine = tool({
   description:
-    "Build a structured morning/evening skincare routine from selected products and the user's profile. Returns a concise markdown summary.",
+    "Build a structured morning/evening skincare routine from selected products using an LLM. Returns a concise markdown summary.",
   inputSchema: z.object({
     products: z
       .array(
@@ -13,7 +14,8 @@ export const buildRoutine = tool({
           brand: z.string(),
           type: z.string(),
           category: z.string().optional(),
-          price_usd: z.number().optional(),
+          // Supabase DECIMAL may arrive as string; accept both
+          price_usd: z.union([z.number(), z.string()]).optional(),
           purchase_link: z.string().optional(),
         })
       )
@@ -28,42 +30,40 @@ export const buildRoutine = tool({
       .describe("User profile that influenced product selection"),
   }),
   execute: async ({ products, userProfile }) => {
-    console.log("[TOOL/build_routine] inputs: products=", products?.length || 0, "profile=", userProfile)
-    // Simple heuristic grouping
-    const pick = (predicate: (p: any) => boolean) => products.find(predicate)
+    try {
+      console.log("[TOOL/build_routine] inputs: products=", products?.length || 0, "profile=", userProfile)
 
-    const cleanser = pick((p) => /cleanser/i.test(p.type))
-    const serum = pick((p) => /serum|treatment/i.test(p.type))
-    const moisturizer = pick((p) => /moisturizer/i.test(p.type))
-    const sunscreen = pick((p) => /sunscreen/i.test(p.type))
-    const nightTreatment = pick((p) => /retinol|treatment|mask/i.test(p.type))
+      const productsForLLM = (products || []).slice(0, 12).map((p) => ({
+        name: p.name,
+        brand: p.brand,
+        type: p.type,
+        price: p.price_usd,
+        link: p.purchase_link,
+      }))
 
-    const morning = [cleanser, serum, moisturizer, sunscreen].filter(Boolean)
-    const evening = [cleanser, nightTreatment || serum, moisturizer].filter(Boolean)
+      const system = [
+        "You are an expert skincare consultant.",
+        "Create a clear, actionable skincare routine using ONLY the provided candidate products.",
+        "Output concise markdown with sections: Morning and Evening, followed by brief tips.",
+      ].join(" ")
 
-    const md = [
-      `🌟 **Your Personalized Skincare Routine**`,
-      ``,
-      `Based on your profile${userProfile.skinType ? ` (${userProfile.skinType} skin)` : ""}${userProfile.budget ? ` and ${userProfile.budget} budget` : ""}.`,
-      ``,
-      `### 🌅 Morning`,
-      ...morning.map((p: any, i) => `${i + 1}. **${p.name}** by ${p.brand} — ${p.type}${p.price_usd ? ` ($${p.price_usd})` : ""}`),
-      ``,
-      `### 🌙 Evening`,
-      ...evening.map((p: any, i) => `${i + 1}. **${p.name}** by ${p.brand} — ${p.type}${p.price_usd ? ` ($${p.price_usd})` : ""}`),
-      ``,
-      `> Tip: Apply products from thinnest to thickest. Always use sunscreen in the morning.`,
-    ].join("\n")
+      const prompt = `User profile (JSON):\n${JSON.stringify(userProfile || {}, null, 2)}\n\nCandidate products (JSON):\n${JSON.stringify(productsForLLM, null, 2)}\n\nWrite the routine now.`
 
-    const result = {
-      routine: {
-        morning: morning.map((p: any) => p.id),
-        evening: evening.map((p: any) => p.id),
-      },
-      summary: md,
+      const { text } = await generateText({
+        model: cohere("command-r-plus"),
+        system,
+        prompt,
+      })
+
+      console.log("[TOOL/build_routine] text:", text)
+
+      const summary = (text || "").trim() || "Your personalized routine will appear here once enough information is collected."
+      console.log("[TOOL/build_routine] summary length:", summary.length)
+      return { routine: { morning: [], evening: [] }, summary }
+    } catch (err) {
+      console.error("[TOOL/build_routine] error:", err)
+      return { routine: { morning: [], evening: [] }, summary: "" }
     }
-    console.log("[TOOL/build_routine] output:", result.routine)
-    return result
   },
 })
 
