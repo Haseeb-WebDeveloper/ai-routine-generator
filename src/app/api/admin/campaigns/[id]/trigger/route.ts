@@ -6,14 +6,11 @@ import EmailTemplates from '@/components/admin/EmailTemplates'
 const BREVO_API_KEY = process.env.BREVO_API_KEY
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email'
 
-console.log("BREVO_API_KEY", BREVO_API_KEY)
 
 async function sendEmailViaBrevo(to: string, subject: string, content: string) {
   if (!BREVO_API_KEY) {
     throw new Error('Brevo API key not configured')
   }
-
-  console.log("BREVO_API_KEY", BREVO_API_KEY)
 
   // Use the correct Brevo API endpoint and structure
   const response = await fetch(BREVO_API_URL, {
@@ -97,8 +94,6 @@ export async function POST(
       .eq('id', campaign.template_id)
       .single()
 
-      console.log(EmailTemplates)
-
     if (templateError || !template) {
       return NextResponse.json({ error: 'Email template not found' }, { status: 404 })
     }
@@ -108,8 +103,6 @@ export async function POST(
       .from('user_emails')
       .select('*')
       .in('email', campaign.selected_users)
-
-      console.log(users)
 
     if (usersError) {
       return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
