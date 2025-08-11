@@ -173,7 +173,7 @@ export async function middleware(request: NextRequest) {
     // For now, let's use a simpler approach - just check if user is accessing from a valid session
     // We'll implement proper server-side auth later
     
-    console.log('🔧 Environment check - NEXT_PUBLIC_ADMIN_EMAILS:', process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [])
+    console.log('🔧 Admin route access allowed (auth handled client-side)')
     
     // TEMPORARY: Allow access to admin routes for now
     // TODO: Implement proper server-side authentication

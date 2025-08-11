@@ -51,9 +51,6 @@ async function quickSetup() {
       console.log(`🆔 User ID: ${authData.user.id}`)
     }
     
-    // Update environment variables
-    updateEnvironmentVariables(defaultEmail)
-    
     console.log('\n🎉 Quick setup complete!')
     console.log('\nYou can now:')
     console.log('1. Start the development server: bun dev')
@@ -65,50 +62,6 @@ async function quickSetup() {
     
   } catch (error) {
     console.error('❌ Unexpected error:', error.message)
-  }
-}
-
-function updateEnvironmentVariables(email) {
-  console.log('\n📝 Updating environment variables...')
-  
-  try {
-    const envPath = path.join(process.cwd(), '.env')
-    let envContent = ''
-    
-    try {
-      envContent = fs.readFileSync(envPath, 'utf8')
-    } catch (error) {
-      envContent = ''
-    }
-    
-    // Parse existing variables
-    const lines = envContent.split('\n')
-    const envVars = {}
-    
-    lines.forEach(line => {
-      const [key, ...valueParts] = line.split('=')
-      if (key && valueParts.length > 0) {
-        envVars[key.trim()] = valueParts.join('=').trim()
-      }
-    })
-    
-    // Set admin emails
-    envVars.ADMIN_EMAILS = email
-    envVars.NEXT_PUBLIC_ADMIN_EMAILS = email
-    
-    // Write back to file
-    const newEnvContent = Object.entries(envVars)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n')
-    
-    fs.writeFileSync(envPath, newEnvContent)
-    console.log('✅ Environment variables updated successfully!')
-    
-  } catch (error) {
-    console.warn('⚠️  Could not update .env file automatically')
-    console.log('Please manually add the following to your .env file:')
-    console.log(`ADMIN_EMAILS=${email}`)
-    console.log(`NEXT_PUBLIC_ADMIN_EMAILS=${email}`)
   }
 }
 

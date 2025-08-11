@@ -223,7 +223,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 BREVO_API_KEY=your_brevo_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-ADMIN_EMAILS=admin@example.com
 ```
 
 ### **Quick Setup Commands**

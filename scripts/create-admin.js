@@ -84,12 +84,31 @@ async function createAdminUser() {
       console.log(`🆔 User ID: ${authData.user.id}`)
       console.log(`📅 Created: ${new Date(authData.user.created_at).toLocaleString()}`)
       
-      // Update environment variables
-      await updateEnvironmentVariables(email)
+      // Insert user into user_emails table with admin role
+      console.log('\n🔄 Adding user to user_emails table...')
+      const { data: insertData, error: insertError } = await supabase
+        .from('user_emails')
+        .insert([
+          {
+            email: authData.user.email,
+            name: 'Admin User',
+            user_id: authData.user.id,
+            role: 'admin',
+            is_active: true,
+            created_at: new Date().toISOString()
+          }
+        ])
+      
+      if (insertError) {
+        console.error('❌ Error inserting into user_emails:', insertError.message)
+        console.log('⚠️  You may need to manually add the user to the user_emails table')
+      } else {
+        console.log('✅ User added to user_emails table with admin role')
+      }
       
       console.log('\n🎉 Admin account setup complete!')
       console.log('\nNext steps:')
-      console.log('1. Update your .env file with the new admin email')
+      console.log('1. The user has been added to the database with admin role')
       console.log('2. Restart your development server')
       console.log('3. Access the admin dashboard at http://localhost:3000/admin')
     }
@@ -98,64 +117,6 @@ async function createAdminUser() {
     console.error('❌ Unexpected error:', error.message)
   } finally {
     rl.close()
-  }
-}
-
-async function updateEnvironmentVariables(email) {
-  console.log('\n📝 Updating environment variables...')
-  
-  try {
-    // Read current .env file
-    const fs = await import('fs')
-    const path = await import('path')
-    
-    const envPath = path.join(process.cwd(), '.env')
-    let envContent = ''
-    
-    try {
-      envContent = fs.readFileSync(envPath, 'utf8')
-    } catch (error) {
-      // File doesn't exist, create it
-      envContent = ''
-    }
-    
-    // Parse existing variables
-    const lines = envContent.split('\n')
-    const envVars = {}
-    
-    lines.forEach(line => {
-      const [key, ...valueParts] = line.split('=')
-      if (key && valueParts.length > 0) {
-        envVars[key.trim()] = valueParts.join('=').trim()
-      }
-    })
-    
-    // Update admin emails
-    const currentAdminEmails = envVars.ADMIN_EMAILS || ''
-    const currentPublicAdminEmails = envVars.NEXT_PUBLIC_ADMIN_EMAILS || ''
-    
-    // Add new email if not already present
-    if (!currentAdminEmails.includes(email)) {
-      envVars.ADMIN_EMAILS = currentAdminEmails ? `${currentAdminEmails},${email}` : email
-    }
-    
-    if (!currentPublicAdminEmails.includes(email)) {
-      envVars.NEXT_PUBLIC_ADMIN_EMAILS = currentPublicAdminEmails ? `${currentPublicAdminEmails},${email}` : email
-    }
-    
-    // Write back to file
-    const newEnvContent = Object.entries(envVars)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n')
-    
-    fs.writeFileSync(envPath, newEnvContent)
-    console.log('✅ Environment variables updated successfully!')
-    
-  } catch (error) {
-    console.warn('⚠️  Could not update .env file automatically')
-    console.log('Please manually add the following to your .env file:')
-    console.log(`ADMIN_EMAILS=${email}`)
-    console.log(`NEXT_PUBLIC_ADMIN_EMAILS=${email}`)
   }
 }
 

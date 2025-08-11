@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, isEmailAdmin } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,11 +28,10 @@ export default function AdminLogin() {
       
       if (user) {
         // Check if user is admin
-        const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
-        console.log('👑 Admin emails from env:', adminEmails)
-        console.log('🔍 Is current user admin?', adminEmails.includes(user.email || ''))
+        const isAdmin = await isEmailAdmin(user.email || '')
+        console.log('👑 Is current user admin?', isAdmin)
         
-        if (adminEmails.includes(user.email || '')) {
+        if (isAdmin) {
           console.log('✅ User is already logged in as admin, redirecting')
           router.push('/admin')
         }
@@ -67,10 +66,10 @@ export default function AdminLogin() {
         console.log('🔑 Session data:', data.session)
         
         // Check if user is admin
-        const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
-        console.log('👑 Admin emails from env:', adminEmails)
+        const isAdmin = await isEmailAdmin(data.user.email || '')
+        console.log('👑 Is current user admin?', isAdmin)
         
-        if (adminEmails.includes(data.user.email || '')) {
+        if (isAdmin) {
           console.log('✅ User is admin, redirecting to dashboard')
           toast.success('Login successful!')
           

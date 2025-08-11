@@ -54,8 +54,6 @@ A personalized skincare routine generator that uses AI to create custom recommen
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    BREVO_API_KEY=your_brevo_api_key
    NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ADMIN_EMAILS=admin@example.com
-   NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com
    ```
 
 4. **Set up the database**

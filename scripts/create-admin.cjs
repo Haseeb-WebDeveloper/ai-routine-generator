@@ -129,18 +129,6 @@ function updateEnvironmentVariables(email) {
       }
     })
     
-    // Update admin emails
-    const currentAdminEmails = envVars.ADMIN_EMAILS || ''
-    const currentPublicAdminEmails = envVars.NEXT_PUBLIC_ADMIN_EMAILS || ''
-    
-    // Add new email if not already present
-    if (!currentAdminEmails.includes(email)) {
-      envVars.ADMIN_EMAILS = currentAdminEmails ? `${currentAdminEmails},${email}` : email
-    }
-    
-    if (!currentPublicAdminEmails.includes(email)) {
-      envVars.NEXT_PUBLIC_ADMIN_EMAILS = currentPublicAdminEmails ? `${currentPublicAdminEmails},${email}` : email
-    }
     
     // Write back to file
     const newEnvContent = Object.entries(envVars)
@@ -153,8 +141,6 @@ function updateEnvironmentVariables(email) {
   } catch (error) {
     console.warn('⚠️  Could not update .env file automatically')
     console.log('Please manually add the following to your .env file:')
-    console.log(`ADMIN_EMAILS=${email}`)
-    console.log(`NEXT_PUBLIC_ADMIN_EMAILS=${email}`)
   }
 }
 

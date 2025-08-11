@@ -9,7 +9,10 @@
     "lint": "next lint",
     "create-admin": "node scripts/create-admin.cjs",
     "quick-setup": "node scripts/quick-setup.cjs",
-    "add-sample-products": "node scripts/add-sample-products.js"
+    "add-sample-products": "node scripts/add-sample-products.js",
+    "update-database": "bun scripts/update-database.js",
+    "check-database": "bun scripts/check-database.js",
+    "add-existing-admin": "bun scripts/add-existing-admin.js"
   },
   "dependencies": {
     "@ai-sdk/cohere": "^2.0.1",

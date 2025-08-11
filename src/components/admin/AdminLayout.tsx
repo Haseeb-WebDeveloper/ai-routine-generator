@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
+import { supabase, isUserAdmin } from '@/lib/supabase'
 import { 
   Users, 
   Upload, 
@@ -31,24 +31,19 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
   const router = useRouter()
 
   useEffect(() => {
-    // Clear any old session data first
-    const clearOldSessions = () => {
-      const oldKeys = ['sb-auth-token', 'sb-xjwisdvcvxbzzvrntcxm-auth-token']
-      oldKeys.forEach(key => {
-        if (localStorage.getItem(key)) {
-          console.log('🧹 Clearing old session key:', key)
-          localStorage.removeItem(key)
-        }
-      })
-    }
-    
-    clearOldSessions()
-    
     // Get current user info from Supabase and handle authentication
     const getUserInfo = async () => {
       try {
+        console.log('🔍 Starting getUserInfo...')
+        
         // First, check if there's a valid session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        console.log('📋 Session check result:', { 
+          hasSession: !!session, 
+          sessionError: sessionError?.message,
+          sessionId: session?.access_token?.substring(0, 20) + '...'
+        })
         
         if (sessionError) {
           console.error('❌ Session error:', sessionError)
@@ -60,7 +55,7 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
 
         if (!session) {
           console.log('❌ No valid session found')
-          // Clear any old session data from localStorage
+          // Only clear localStorage if there's no session
           localStorage.removeItem('sb-auth-token')
           localStorage.removeItem('sb-xjwisdvcvxbzzvrntcxm-auth-token')
           router.push('/admin/login')
@@ -69,6 +64,12 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
 
         // Get user from session
         const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        console.log('👤 User check result:', { 
+          hasUser: !!user, 
+          userError: userError?.message,
+          userEmail: user?.email 
+        })
         
         if (userError || !user) {
           console.error('❌ User error:', userError)
@@ -80,10 +81,11 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
         console.log('✅ Valid user session found:', user.email)
         
         // Check if user is admin
-        const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
-        console.log('👑 Admin emails from env:', adminEmails)
+        console.log('🔐 Checking admin status for user:', user.id)
+        const isAdmin = await isUserAdmin(user.id)
+        console.log('👑 Admin status:', isAdmin)
         
-        if (!adminEmails.includes(user.email || '')) {
+        if (!isAdmin) {
           console.log('❌ User is not admin, signing out')
           await supabase.auth.signOut()
           router.push('/admin/login')
