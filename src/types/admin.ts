@@ -1,10 +1,12 @@
 export interface UserEmail {
   id: string
   email: string
+  name: string
   created_at: string
   is_active: boolean
   quiz_completed: boolean
   unique_link?: string
+  user_id?: string // Reference to auth.users table
 }
 
 export interface QuizResponse {
@@ -70,4 +72,17 @@ export interface CampaignCreateData {
   template_id: string
   selected_users: string[]
   scheduled_at?: string
+}
+
+export interface UserCreateData {
+  email: string
+  name: string
+}
+
+export interface UserAuthData {
+  id: string
+  email: string
+  name: string
+  access_token: string
+  refresh_token: string
 }

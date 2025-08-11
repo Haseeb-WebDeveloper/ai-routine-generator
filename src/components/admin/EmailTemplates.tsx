@@ -16,7 +16,7 @@ const defaultTemplates: Omit<EmailTemplate, 'id' | 'created_at' | 'updated_at'>[
   {
     name: 'Skincare Quiz Invitation',
     subject: 'Your Personalized Skincare Routine Awaits!',
-    content: `Hi there,
+    content: `Hi {{name}},
 
 We're excited to create a custom skincare routine just for you! 
 
@@ -36,7 +36,7 @@ The AI Routine Team`
   {
     name: 'Follow-up Reminder',
     subject: 'Don\'t miss out on your personalized skincare routine!',
-    content: `Hi there,
+    content: `Hi {{name}},
 
 We noticed you haven't completed your skincare quiz yet. 
 
@@ -59,7 +59,7 @@ The AI Routine Team`
   {
     name: 'Welcome Back',
     subject: 'Welcome back! Let\'s update your skincare routine',
-    content: `Hi there,
+    content: `Hi {{name}},
 
 Welcome back! It's been a while since you last visited us.
 

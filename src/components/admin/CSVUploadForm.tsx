@@ -7,6 +7,11 @@ import { Alert } from '@/components/ui/alert'
 import { Upload, Download, CheckCircle, AlertCircle, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+interface CSVUser {
+  name: string
+  email: string
+}
+
 export default function CSVUploadForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -68,12 +73,12 @@ export default function CSVUploadForm() {
   }
 
   const downloadTemplate = () => {
-    const csvContent = 'email\nuser1@example.com\nuser2@example.com\nuser3@example.com'
+    const csvContent = 'name,email\nJohn Doe,john@example.com\nJane Smith,jane@example.com\nBob Johnson,bob@example.com'
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'user_emails_template.csv'
+    a.download = 'user_template.csv'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -85,8 +90,8 @@ export default function CSVUploadForm() {
       <CardHeader>
         <CardTitle>Upload CSV File</CardTitle>
         <CardDescription>
-          Upload a CSV file containing email addresses to bulk import users.
-          The CSV should have an "email" column with valid email addresses.
+          Upload a CSV file containing user names and email addresses to bulk import users.
+          The CSV should have "name" and "email" columns with valid data.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -192,7 +197,7 @@ export default function CSVUploadForm() {
                     {result.existing > 0 && (
                       <p>Already existed: {result.existing} users</p>
                     )}
-                    <p>Total processed: {result.total} emails</p>
+                    <p>Total processed: {result.total} users</p>
                   </div>
                 </div>
               </Alert>

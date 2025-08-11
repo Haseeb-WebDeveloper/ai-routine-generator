@@ -322,7 +322,7 @@ export default function Campaigns() {
                           onCheckedChange={(checked) => handleUserSelect(user.email, checked as boolean)}
                         />
                         <Label htmlFor={user.id} className="text-sm">
-                          {user.email}
+                          {user.name} ({user.email})
                           {user.quiz_completed && (
                             <Badge variant="secondary" className="ml-2">Quiz Completed</Badge>
                           )}

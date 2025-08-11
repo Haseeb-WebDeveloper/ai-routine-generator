@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import EmailTemplates from '@/components/admin/EmailTemplates'
 
 // Brevo API configuration
@@ -115,16 +115,22 @@ export async function POST(
     // Send emails to each recipient
     for (const user of users) {
       try {
-        // Generate unique quiz link using user's created_at timestamp for consistency
-        // Fallback to current timestamp if created_at is not available
-        const timestamp = user.created_at || new Date().toISOString()
-        const uniqueLink = `${process.env.NEXT_PUBLIC_APP_URL}/validate?email=${encodeURIComponent(user.email)}&token=${btoa(user.email + timestamp)}`
+        // Get user's auth details
+        const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(user.user_id)
+
+        // Generate secure token for direct quiz access with authentication
+        const timestamp = Date.now()
+        const secureToken = btoa(`${user.email}:${timestamp}:${Math.random().toString(36)}`)
+        
+        // Create direct link to quiz (no need for validation)
+        const directQuizLink = `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(user.email)}&token=${secureToken}`
 
         console.log(`Sending email to: ${user.email}`)
-        console.log(`Unique link: ${uniqueLink}`)
+        console.log(`Direct quiz link: ${directQuizLink}`)
         
         // Replace template variables
-        let emailContent = template.content.replace(/\{\{LINK\}\}/g, uniqueLink)
+        let emailContent = template.content.replace(/\{\{LINK\}\}/g, directQuizLink)
+        emailContent = emailContent.replace(/\{\{name\}\}/g, user.name)
         let emailSubject = template.subject
 
         console.log(`Email subject: ${emailSubject}`)
@@ -138,7 +144,7 @@ export async function POST(
         // Update user's unique link in database
         await supabase
           .from('user_emails')
-          .update({ unique_link: uniqueLink })
+          .update({ unique_link: directQuizLink })
           .eq('id', user.id)
 
       } catch (error) {

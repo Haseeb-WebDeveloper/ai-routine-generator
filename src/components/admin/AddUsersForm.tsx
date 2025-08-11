@@ -9,35 +9,49 @@ import { Alert } from '@/components/ui/alert'
 import { Plus, X, CheckCircle, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+interface UserInput {
+  name: string
+  email: string
+}
+
 export default function AddUsersForm() {
-  const [emails, setEmails] = useState<string[]>([''])
+  const [users, setUsers] = useState<UserInput[]>([{ name: '', email: '' }])
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
 
-  const addEmailField = () => {
-    setEmails([...emails, ''])
+  const addUserField = () => {
+    setUsers([...users, { name: '', email: '' }])
   }
 
-  const removeEmailField = (index: number) => {
-    if (emails.length > 1) {
-      const newEmails = emails.filter((_, i) => i !== index)
-      setEmails(newEmails)
+  const removeUserField = (index: number) => {
+    if (users.length > 1) {
+      const newUsers = users.filter((_, i) => i !== index)
+      setUsers(newUsers)
     }
   }
 
-  const updateEmail = (index: number, value: string) => {
-    const newEmails = [...emails]
-    newEmails[index] = value
-    setEmails(newEmails)
+  const updateUser = (index: number, field: keyof UserInput, value: string) => {
+    const newUsers = [...users]
+    newUsers[index][field] = value
+    setUsers(newUsers)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    const validEmails = emails.filter(email => email.trim() !== '')
+    const validUsers = users.filter(user => user.name.trim() !== '' && user.email.trim() !== '')
     
-    if (validEmails.length === 0) {
-      toast.error('Please enter at least one email address')
+    if (validUsers.length === 0) {
+      toast.error('Please enter at least one user with name and email')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const invalidEmails = validUsers.filter(user => !emailRegex.test(user.email))
+    
+    if (invalidEmails.length > 0) {
+      toast.error(`Invalid email format: ${invalidEmails.map(u => u.email).join(', ')}`)
       return
     }
 
@@ -50,7 +64,7 @@ export default function AddUsersForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ emails: validEmails }),
+        body: JSON.stringify({ users: validUsers }),
       })
 
       const data = await response.json()
@@ -58,7 +72,7 @@ export default function AddUsersForm() {
       if (response.ok) {
         setResult(data)
         toast.success(`Successfully added ${data.added} users`)
-        setEmails(['']) // Reset form
+        setUsers([{ name: '', email: '' }]) // Reset form
       } else {
         toast.error(data.error || 'Failed to add users')
         setResult({ error: data.error })
@@ -76,14 +90,28 @@ export default function AddUsersForm() {
       <CardHeader>
         <CardTitle>Add Users Manually</CardTitle>
         <CardDescription>
-          Add one or multiple email addresses to invite users to take the skincare quiz.
+          Add one or multiple users with names and email addresses to invite them to take the skincare quiz.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            {emails.map((email, index) => (
+            {users.map((user, index) => (
               <div key={index} className="flex items-center space-x-2">
+                <div className="flex-1">
+                  <Label htmlFor={`name-${index}`} className="sr-only">
+                    Name {index + 1}
+                  </Label>
+                  <Input
+                    id={`name-${index}`}
+                    type="text"
+                    placeholder="Enter full name"
+                    value={user.name}
+                    onChange={(e) => updateUser(index, 'name', e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
                 <div className="flex-1">
                   <Label htmlFor={`email-${index}`} className="sr-only">
                     Email {index + 1}
@@ -92,17 +120,18 @@ export default function AddUsersForm() {
                     id={`email-${index}`}
                     type="email"
                     placeholder="Enter email address"
-                    value={email}
-                    onChange={(e) => updateEmail(index, e.target.value)}
+                    value={user.email}
+                    onChange={(e) => updateUser(index, 'email', e.target.value)}
                     disabled={isLoading}
+                    required
                   />
                 </div>
-                {emails.length > 1 && (
+                {users.length > 1 && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => removeEmailField(index)}
+                    onClick={() => removeUserField(index)}
                     disabled={isLoading}
                   >
                     <X className="h-4 w-4" />
@@ -115,17 +144,17 @@ export default function AddUsersForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={addEmailField}
+            onClick={addUserField}
             disabled={isLoading}
             className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Another Email
+            Add Another User
           </Button>
 
           <Button
             type="submit"
-            disabled={isLoading || emails.every(email => email.trim() === '')}
+            disabled={isLoading || users.every(user => user.name.trim() === '' || user.email.trim() === '')}
             className="w-full"
           >
             {isLoading ? 'Adding Users...' : 'Add Users'}
@@ -158,7 +187,7 @@ export default function AddUsersForm() {
                         <ul className="list-disc list-inside space-y-1">
                           {result.users.map((user: any) => (
                             <li key={user.id} className="text-xs">
-                              {user.email}
+                              {user.name} ({user.email})
                             </li>
                           ))}
                         </ul>
