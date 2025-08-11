@@ -1,0 +1,254 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management and authentication
+model UserEmail {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  isActive      Boolean  @default(true) @map("is_active")
+  quizCompleted Boolean  @default(false) @map("quiz_completed")
+  uniqueLink    String?  @map("unique_link")
+  userId        String?  @map("user_id") // Reference to auth.users table
+  role          String?  @default("user") // admin, user
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  quizResponses QuizResponse[]
+
+  @@map("user_emails")
+}
+
+// Quiz responses from users
+model QuizResponse {
+  id              String   @id @default(cuid())
+  userEmail       String   @map("user_email")
+  skinType        String   @map("skin_type")
+  concerns        String[]
+  age             Int
+  budget          String
+  skinSensitivity String   @map("skin_sensitivity")
+  climate         String
+  lifestyle       String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user UserEmail @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@map("quiz_responses")
+}
+
+// Email templates for campaigns
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  subject   String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  campaigns Campaign[]
+
+  @@map("email_templates")
+}
+
+// Email campaigns
+model Campaign {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  templateId    String         @map("template_id")
+  selectedUsers String[]       @map("selected_users") // Array of user emails
+  status        CampaignStatus @default(DRAFT)
+  scheduledAt   DateTime?      @map("scheduled_at")
+  sentAt        DateTime?      @map("sent_at")
+  stats         Json? // Campaign statistics
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  template EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("campaigns")
+}
+
+// Campaign status enum
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  CANCELLED
+}
+
+// Product database for skincare recommendations
+model Product {
+  id              String        @id @default(cuid())
+  name            String
+  brand           String
+  type            ProductType
+  gender          Gender
+  age             Int
+  budget          BudgetRange
+  category        Category
+  useTime         UseTime[]     @map("use_time")
+  frequency       Frequency
+  skinTypes       SkinType[]    @map("skin_types")
+  skinConcerns    SkinConcern[] @map("skin_concerns")
+  ingredients     Json // Array of Ingredient objects
+  avoidWith       Json // Array of Ingredient objects
+  texture         Texture
+  comedogenic     Boolean
+  fragranceFree   Boolean       @map("fragrance_free")
+  alcoholFree     Boolean       @map("alcohol_free")
+  crueltyFree     Boolean       @map("cruelty_free")
+  vegan           Boolean
+  instructions    String
+  benefits        String[]
+  warnings        String[]
+  priceUsd        Float         @map("price_usd")
+  purchaseLink    String        @map("purchase_link")
+  imageUrl        String        @map("image_url")
+  popularityScore Float?        @map("popularity_score")
+  rating          Float?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+// Product type enums
+enum ProductType {
+  // Core
+  CLEANSER
+  MOISTURIZER
+  SUNSCREEN
+
+  // Prep & Hydration
+  TONER
+  ESSENCE
+  HYDRATING_MIST
+  FACE_MIST
+
+  // Treatment-Focused
+  SERUM
+  AMPOULE
+  SPOT_TREATMENT
+  EXFOLIANT_CHEMICAL
+  EXFOLIATOR_PHYSICAL
+  RETINOID
+  RETINOL
+  PEPTIDE_TREATMENT
+  VITAMIN_C_TREATMENT
+  NIACINAMIDE_TREATMENT
+  BRIGHTENING_TREATMENT
+  ANTI_AGING_TREATMENT
+
+  // Night Care / Repair
+  SLEEPING_MASK
+  NIGHT_CREAM
+  OVERNIGHT_TREATMENT
+  FACE_OIL
+
+  // Targeted Areas
+  EYE_CREAM
+  EYE_SERUM
+  LIP_BALM
+  LIP_TREATMENT
+
+  // Cleansing Extras
+  MAKEUP_REMOVER
+  CLEANSING_BALM
+  MICELLAR_WATER
+  OIL_CLEANSER
+
+  // Occasional Treatments
+  FACE_MASK
+  SHEET_MASK
+  CLAY_MASK
+  PEEL_OFF_MASK
+  SCRUB_MASK
+  HYDRATING_MASK
+  DETOX_MASK
+
+  // Special Purpose
+  BARRIER_REPAIR_CREAM
+  CICA_CREAM
+  SOOTHING_CREAM
+  ANTI_REDNESS_CREAM
+  PORE_MINIMIZER
+  SEBUM_CONTROL_GEL
+}
+
+enum SkinType {
+  DRY
+  OILY
+  COMBINATION
+  SENSITIVE
+  NORMAL
+}
+
+enum SkinConcern {
+  ACNE
+  BLACKHEADS
+  DULLNESS
+  HYPERPIGMENTATION
+  FINE_LINES
+  DEHYDRATION
+  REDNESS
+  PORES
+  UNEVEN_TEXTURE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNISEX
+}
+
+enum BudgetRange {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Texture {
+  GEL
+  CREAM
+  LOTION
+  FOAM
+  OIL
+  SPRAY
+}
+
+enum Frequency {
+  DAILY
+  TWO_THREE_TIMES_WEEK
+  AS_NEEDED
+}
+
+enum UseTime {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+}
+
+enum Category {
+  CORE
+  TREATMENT
+  HYDRATION
+  SPECIAL
+  OPTIONAL
+}

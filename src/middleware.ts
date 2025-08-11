@@ -37,14 +37,14 @@ export async function middleware(request: NextRequest) {
         // Basic token validation
         if (tokenEmail !== email) {
           // Invalid token, redirect to unauthorized
-          return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
         }
 
         // Check if token is not too old (24 hours)
         const tokenAge = Date.now() - parseInt(timestamp)
         if (tokenAge > 24 * 60 * 60 * 1000) {
           // Token expired, redirect to unauthorized
-          return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
         }
 
         // Get user from database
@@ -57,13 +57,13 @@ export async function middleware(request: NextRequest) {
 
         if (error || !user) {
           // User not found or inactive, redirect to unauthorized
-          return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
         }
 
         // Check if user has an auth account
         if (!user.user_id) {
           // No auth account, redirect to unauthorized
-          return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
         }
 
         // Get user's auth session using admin client
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
         
         if (authError || !authUser) {
           // Auth user not found, redirect to unauthorized
-          return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+          return NextResponse.redirect(new URL('/unauthorized', request.url))
         }
 
         // Create a custom authenticated session using secure cookies
@@ -139,26 +139,26 @@ export async function middleware(request: NextRequest) {
       } catch (error) {
         console.error('Error processing quiz authentication:', error)
         // Error occurred, redirect to unauthorized
-        return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
     }
   }
 
   // VALIDATE FLOW - Keep existing validation logic for backward compatibility
-  if (url.pathname === '/validate') {
-    console.log('validate pathname')
-    const email = url.searchParams.get('email')
-    const token = url.searchParams.get('token')
-    // If already verified, skip validate page
-    const verified = request.cookies.get('quiz_verified')?.value
-    const cookieEmail = request.cookies.get('quiz_email')?.value
-    if (!email || !token) {
-      if (verified === '1' && cookieEmail) {
-        const quizUrl = new URL('/quiz', url)
-        return NextResponse.redirect(quizUrl)
-      }
-    }
-  }
+  // if (url.pathname === '/validate') {
+  //   console.log('validate pathname')
+  //   const email = url.searchParams.get('email')
+  //   const token = url.searchParams.get('token')
+  //   // If already verified, skip validate page
+  //   const verified = request.cookies.get('quiz_verified')?.value
+  //   const cookieEmail = request.cookies.get('quiz_email')?.value
+  //   if (!email || !token) {
+  //     if (verified === '1' && cookieEmail) {
+  //       const quizUrl = new URL('/quiz', url)
+  //       return NextResponse.redirect(quizUrl)
+  //     }
+  //   }
+  // }
 
   // Only apply admin auth to admin routes
   if (url.pathname.startsWith('/admin')) {
