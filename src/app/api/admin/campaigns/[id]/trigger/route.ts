@@ -2,58 +2,279 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import EmailTemplates from '@/components/admin/EmailTemplates'
 
-// Brevo API configuration
-const BREVO_API_KEY = process.env.BREVO_API_KEY
-const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email'
+// Klaviyo API configuration
+// const KLAVIYO_API_KEY = process.env.KLAVIYO_API_KEY
+// const KLAVIYO_API_URL = 'https://a.klaviyo.com/api/v2'
+// const KLAVIYO_LIST_ID = process.env.KLAVIYO_LIST_ID
 
-
-async function sendEmailViaBrevo(to: string, subject: string, content: string) {
-  if (!BREVO_API_KEY) {
-    throw new Error('Brevo API key not configured')
+// Simple working Klaviyo integration
+const KLAVIYO_API_KEY = process.env.KLAVIYO_API_KEY
+const KLAVIYO_API_URL = 'https://a.klaviyo.com/api'
+const KLAVIYO_LIST_ID = process.env.KLAVIYO_LIST_ID
+async function sendEmailViaKlaviyo(to: string, subject: string, content: string, name?: string) {
+  if (!KLAVIYO_API_KEY) {
+    throw new Error('Klaviyo API key not configured')
   }
 
-  // Use the correct Brevo API endpoint and structure
-  const response = await fetch(BREVO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': BREVO_API_KEY,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify({
-      to: [{ email: to }],
-      sender: {
-        name: 'AI Routine Team',
-        email: 'web.dev.haseeb@gmail.com' // Use your verified sender email
-      },
-      subject: subject,
-      htmlContent: content,
-      // Add additional required fields for Brevo
-      replyTo: {
-        email: 'web.dev.haseeb@gmail.com',
-        name: 'AI Routine Team'
+  if (!KLAVIYO_LIST_ID) {
+    throw new Error('Klaviyo List ID not configured')
+  }
+
+  console.log('Using Klaviyo API Key (first 10 chars):', KLAVIYO_API_KEY.substring(0, 10))
+  console.log('Using List ID:', KLAVIYO_LIST_ID)
+
+  try {
+    let profileId: string
+
+    // Step 1: Try to create profile, or get existing one
+    const profileData = {
+      data: {
+        type: "profile",
+        attributes: {
+          email: to,
+          first_name: name || '',
+          last_name: "",
+          properties: {}
+        }
       }
-    }),
-  })
-
-  console.log('Brevo Response Status:', response.status)
-  console.log('Brevo Response Headers:', Object.fromEntries(response.headers.entries()))
-
-  if (!response.ok) {
-    let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-    try {
-      const errorData = await response.json()
-      console.log('Brevo Error Data:', errorData)
-      errorMessage = errorData.message || errorData.error || errorMessage
-    } catch (e) {
-      console.log('Could not parse error response')
     }
-    throw new Error(`Brevo API error: ${errorMessage}`)
-  }
 
-  const result = await response.json()
-  console.log('Brevo Success Response:', result)
-  return result
+    console.log('Creating/updating profile...')
+
+    const profileResponse = await fetch(`${KLAVIYO_API_URL}/profiles/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
+        'revision': '2024-10-15'
+      },
+      body: JSON.stringify(profileData)
+    })
+
+    if (profileResponse.status === 409) {
+      // Profile already exists, extract the ID from the error
+      const errorData = await profileResponse.json()
+      profileId = errorData.errors[0].meta.duplicate_profile_id
+      console.log('Profile already exists, using existing ID:', profileId)
+      
+      // Optionally update the existing profile
+      const updateData = {
+        data: {
+          type: "profile",
+          id: profileId,
+          attributes: {
+            first_name: name || '',
+            properties: {
+              last_updated: new Date().toISOString()
+            }
+          }
+        }
+      }
+
+      const updateResponse = await fetch(`${KLAVIYO_API_URL}/profiles/${profileId}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
+          'revision': '2024-10-15'
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      if (!updateResponse.ok) {
+        console.warn('Failed to update existing profile, but continuing...')
+      } else {
+        console.log('Existing profile updated successfully')
+      }
+
+    } else if (profileResponse.ok) {
+      // New profile created successfully
+      const profileResult = await profileResponse.json()
+      profileId = profileResult.data.id
+      console.log('New profile created:', profileId)
+    } else {
+      // Some other error
+      const errorData = await profileResponse.text()
+      console.error('Klaviyo profile error:', errorData)
+      throw new Error(`Failed to handle profile: ${profileResponse.status} - ${errorData}`)
+    }
+
+    // Step 2: Add profile to list (if not already there)
+    console.log('Adding profile to list...')
+    
+    const listMembershipData = {
+      data: [
+        {
+          type: "profile",
+          id: profileId
+        }
+      ]
+    }
+
+    const listResponse = await fetch(`${KLAVIYO_API_URL}/lists/${KLAVIYO_LIST_ID}/relationships/profiles/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
+        'revision': '2024-10-15'
+      },
+      body: JSON.stringify(listMembershipData)
+    })
+
+    if (!listResponse.ok) {
+      const errorData = await listResponse.text()
+      console.warn('List membership error (may already be in list):', errorData)
+    } else {
+      console.log('Profile added to list successfully')
+    }
+
+    // Step 3: Create event to trigger email
+    console.log('Creating event to trigger email...')
+
+    const eventData = {
+      data: {
+        type: "event",
+        attributes: {
+          properties: {
+            subject: subject,
+            content: content,
+            quiz_link: content.includes('quiz') ? 'true' : 'false',
+            timestamp: new Date().toISOString(),
+            email_type: 'quiz_invitation'
+          },
+          metric: {
+            data: {
+              type: "metric",
+              attributes: {
+                name: "Quiz Email Triggered"
+              }
+            }
+          },
+          profile: {
+            data: {
+              type: "profile",
+              id: profileId
+            }
+          }
+        }
+      }
+    }
+
+    const eventResponse = await fetch(`${KLAVIYO_API_URL}/events/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
+        'revision': '2024-10-15'
+      },
+      body: JSON.stringify(eventData)
+    })
+
+    console.log('Event response status:', eventResponse.status)
+    console.log('Event response headers:', Object.fromEntries(eventResponse.headers.entries()))
+
+    if (!eventResponse.ok) {
+      const errorData = await eventResponse.text()
+      console.error('Klaviyo event creation error:', errorData)
+      throw new Error(`Failed to create event: ${eventResponse.status} - ${errorData}`)
+    }
+
+    // Check if response has content before parsing JSON
+    const responseText = await eventResponse.text()
+    console.log('Event response text:', responseText)
+    
+    if (!responseText) {
+      console.log('Event created successfully (empty response)')
+      return {
+        success: true,
+        profileId: profileId,
+        eventId: 'created_but_no_id_returned',
+        message: 'Email event triggered successfully (empty response from Klaviyo)'
+      }
+    }
+
+    const eventResult = JSON.parse(responseText)
+    console.log('Event created successfully:', eventResult.data?.id || 'no ID in response')
+
+    return {
+      success: true,
+      profileId: profileId,
+      eventId: eventResult.data?.id || 'created_successfully',
+      message: 'Email event triggered successfully'
+    }
+
+  } catch (error) {
+    console.error('Klaviyo API error:', error)
+    throw error
+  }
+}
+
+// Alternative: Skip profile creation and just create the event
+async function sendEmailViaKlaviyoSimple(to: string, subject: string, content: string, name?: string) {
+  try {
+    console.log('Creating event directly without profile management...')
+
+    const eventData = {
+      data: {
+        type: "event",
+        attributes: {
+          properties: {
+            subject: subject,
+            content: content,
+            quiz_link: content.includes('quiz') ? 'true' : 'false',
+            timestamp: new Date().toISOString(),
+            email_type: 'quiz_invitation'
+          },
+          metric: {
+            data: {
+              type: "metric",
+              attributes: {
+                name: "Quiz Email Triggered"
+              }
+            }
+          },
+          profile: {
+            data: {
+              type: "profile",
+              attributes: {
+                email: to,
+                first_name: name || ''
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const eventResponse = await fetch(`${KLAVIYO_API_URL}/events/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
+        'revision': '2024-10-15'
+      },
+      body: JSON.stringify(eventData)
+    })
+
+    if (!eventResponse.ok) {
+      const errorData = await eventResponse.text()
+      console.error('Klaviyo event creation error:', errorData)
+      throw new Error(`Failed to create event: ${eventResponse.status} - ${errorData}`)
+    }
+
+    const eventResult = await eventResponse.json()
+    console.log('Event created successfully:', eventResult.data.id)
+
+    return {
+      success: true,
+      eventId: eventResult.data.id,
+      message: 'Email event triggered successfully (profile handled automatically)'
+    }
+
+  } catch (error) {
+    console.error('Klaviyo API error:', error)
+    throw error
+  }
 }
 
 export async function POST(
@@ -136,8 +357,8 @@ export async function POST(
         console.log(`Email subject: ${emailSubject}`)
         console.log(`Email content length: ${emailContent.length}`)
 
-        // Send email via Brevo
-        await sendEmailViaBrevo(user.email, emailSubject, emailContent)
+        // Send email via Klaviyo
+        await sendEmailViaKlaviyo(user.email, emailSubject, emailContent, user.name)
         sentCount++
         console.log(`✅ Email sent successfully to: ${user.email}`)
 

@@ -35,7 +35,7 @@ This is an **AI-powered skincare consultation website** that acts like having a 
 - **Database**: PostgreSQL (via Supabase)
 - **AI Engine**: Cohere AI (Command R Plus model)
 - **Authentication**: Supabase Auth
-- **Email Service**: Brevo (formerly Sendinblue)
+- **Email Service**: Klaviyo
 - **UI Components**: shadcn/ui + Radix UI
 - **Package Manager**: Bun
 - **Deployment**: Vercel-ready
@@ -172,11 +172,12 @@ AI Generation → Email API → User Email → Success Response
 
 ## 📧 **Email System Integration**
 
-### **Brevo Email Service**
+### **Klaviyo Email Service**
 - **Professional email delivery** with high deliverability
 - **Template system** with variable substitution
 - **Campaign tracking** and analytics
 - **Automated sending** for bulk campaigns
+- **Contact list management** and segmentation
 
 ### **Email Templates**
 - **Quiz invitations** with personalized links
@@ -221,7 +222,8 @@ email_templates: Reusable message templates
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-BREVO_API_KEY=your_brevo_api_key
+KLAVIYO_API_KEY=your_klaviyo_api_key
+KLAVIYO_LIST_ID=your_klaviyo_list_id
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -304,7 +306,7 @@ bun dev
 
 ### **Setup Guides**
 - [Admin Setup Guide](ADMIN_SETUP.md)
-- [Brevo Email Integration](BREVO_SETUP.md)
+- [Klaviyo Email Integration](KLAVIYO_SETUP.md)
 - [Product Database Setup](PRODUCT_SETUP.md)
 
 ### **API Documentation**

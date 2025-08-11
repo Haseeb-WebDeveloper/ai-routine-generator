@@ -8,7 +8,7 @@ A personalized skincare routine generator that uses AI to create custom recommen
 - **User Management**: Add users individually or via CSV upload
 - **Email Campaigns**: Create and manage email campaigns with templates
 - **Email Templates**: Customizable email templates with variable support
-- **Brevo Integration**: Professional email delivery via Brevo API
+- **Klaviyo Integration**: Professional email delivery via Klaviyo API
 - **Quiz Link Generation**: Automatic unique link generation for each user
 - **Database Integration**: PostgreSQL database with Supabase
 - **Authentication**: Secure admin login system
@@ -19,7 +19,7 @@ A personalized skincare routine generator that uses AI to create custom recommen
 - **Backend**: Next.js API Routes + Supabase
 - **Database**: PostgreSQL (via Supabase)
 - **Authentication**: Supabase Auth
-- **Email Service**: Brevo (formerly Sendinblue)
+- **Email Service**: Klaviyo
 - **UI Components**: shadcn/ui + Radix UI
 - **Package Manager**: Bun
 
@@ -27,7 +27,7 @@ A personalized skincare routine generator that uses AI to create custom recommen
 
 - Node.js 18+ or Bun
 - Supabase account
-- Brevo account (for email functionality)
+- Klaviyo account (for email functionality)
 
 ## 🚀 Getting Started
 
@@ -52,7 +52,8 @@ A personalized skincare routine generator that uses AI to create custom recommen
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   BREVO_API_KEY=your_brevo_api_key
+   KLAVIYO_API_KEY=your_klaviyo_api_key
+   KLAVIYO_LIST_ID=your_klaviyo_list_id
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
 
@@ -81,7 +82,7 @@ A personalized skincare routine generator that uses AI to create custom recommen
 ## 📚 Documentation
 
 - [Admin Setup Guide](ADMIN_SETUP.md)
-- [Brevo Email Integration](BREVO_SETUP.md)
+- [Klaviyo Email Integration](KLAVIYO_SETUP.md)
 - [Database Schema](supabase-schema.sql)
 
 ## 🔧 Available Scripts
