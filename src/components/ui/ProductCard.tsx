@@ -37,7 +37,7 @@ export function ProductCard({ product, className = "" }: ProductCardProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center w-full">
+        <div className="space-y-2 w-full">
           <h3 className="text-lg leading-tight line-clamp-2 text-foreground">
             {product.productName}
           </h3>
