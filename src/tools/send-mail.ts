@@ -5,7 +5,7 @@ import { z } from "zod";
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export const sendMail = tool({
-  description: `Use this tool to send a personalized skincare routine summary to a user's email address. This should be used after creating a complete skincare routine for the user.`,
+  description: `Use this tool to send an routine to a user's email address.`,
   inputSchema: z.object({
     summary: z
       .string()

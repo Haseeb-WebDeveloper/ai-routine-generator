@@ -131,3 +131,20 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+/* Custom prose styles for routine text */
+/* .routine-prose h2 {
+  @apply text-xl font-bold ;
+}
+
+.routine-prose h3 {
+  @apply text-lg font-semibold ;
+}
+
+.routine-prose p {
+  @apply mb-2;
+}
+
+.routine-prose li {
+  @apply ml-4;
+} */

@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
 import Navbar from "@/components/Navbar";
+import { RoutineWithProducts } from "@/components/ui/RoutineWithProducts";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -169,6 +170,8 @@ export default function QuizPage() {
         const toolName = toolPart.type.replace("tool-", "");
         if (toolName.includes("routine")) {
           return "Generating Routine";
+        } else if (toolName.includes("send_mail")) {
+          return "Sending Mail";
         }
         return `Using ${toolName}`;
       }
@@ -198,6 +201,7 @@ export default function QuizPage() {
                   if (shouldHideMessage) return null;
 
                   const content = extractMessageContent(message);
+                  console.log('content', content)
                   const isToolActive = hasActiveTool(message);
                   const toolName = getToolDisplayName(message);
 
@@ -219,7 +223,11 @@ export default function QuizPage() {
                         
                         {/* Show message content */}
                         {content && (
-                          <p className="whitespace-pre-wrap">{content}</p>
+                          content.includes('[PRODUCTS_JSON]') ? (
+                            <RoutineWithProducts content={content} />
+                          ) : (
+                            <p className="whitespace-pre-wrap">{content}</p>
+                          )
                         )}
                       </div>
                     </div>
