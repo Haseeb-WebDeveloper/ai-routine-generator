@@ -162,31 +162,41 @@ export async function middleware(request: NextRequest) {
 
   // Only apply admin auth to admin routes
   if (url.pathname.startsWith('/admin')) {
+    console.log('🔐 ADMIN ROUTE DETECTED:', url.pathname)
+    
     // Skip middleware for admin login and register pages
     if (request.nextUrl.pathname === '/admin/login' || request.nextUrl.pathname === '/admin/register') {
+      console.log('✅ Skipping auth for login/register page')
       return NextResponse.next()
     }
 
-    // Get the session from the request cookies
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    // Get Supabase session cookies
+    const accessToken = request.cookies.get('sb-access-token')?.value
+    const refreshToken = request.cookies.get('sb-refresh-token')?.value
 
-    // Get the session from cookies
-    const authCookie = request.cookies.get('sb-access-token')
-    const refreshCookie = request.cookies.get('sb-refresh-token')
+    console.log('🍪 Admin auth cookies:', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken 
+    })
 
-    if (!authCookie) {
+    if (!accessToken) {
+      console.log('❌ No access token, redirecting to login')
       // Redirect to admin login if no session
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
     try {
-      // Verify the session
-      const { data: { user }, error } = await supabase.auth.getUser(authCookie.value)
+      // Create Supabase client to verify the session
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      // Verify the session using the access token
+      const { data: { user }, error } = await supabase.auth.getUser(accessToken)
 
       if (error || !user) {
+        console.log('❌ Invalid access token, clearing cookies and redirecting to login')
         // Clear invalid cookies and redirect to login
         const response = NextResponse.redirect(new URL('/admin/login', request.url))
         response.cookies.delete('sb-access-token')
@@ -194,18 +204,23 @@ export async function middleware(request: NextRequest) {
         return response
       }
 
-      // Check if user has admin role (you can customize this based on your needs)
-      // For now, we'll check if the user's email is in a list of admin emails
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
+      console.log('✅ User authenticated:', user.email)
+
+      // Check if user has admin role
+      const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+      console.log('👑 Admin emails:', adminEmails)
       
       if (!adminEmails.includes(user.email || '')) {
+        console.log('❌ User not admin, redirecting to unauthorized')
         // User is not an admin, redirect to unauthorized page
         return NextResponse.redirect(new URL('/admin/unauthorized', request.url))
       }
 
+      console.log('✅ User is admin, continuing')
       // User is authenticated and authorized, continue
       return NextResponse.next()
     } catch (error) {
+      console.error('❌ Error in admin auth:', error)
       // Error occurred, redirect to login
       const response = NextResponse.redirect(new URL('/admin/login', request.url))
       response.cookies.delete('sb-access-token')

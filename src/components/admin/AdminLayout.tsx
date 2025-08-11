@@ -31,26 +31,16 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication on component mount
-    const checkAuth = async () => {
+    // Get current user info from Supabase (middleware already verified auth)
+    const getUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/admin/login')
-        return
+      if (user) {
+        setUser(user)
       }
-
-      // Check if user is admin
-      const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
-      if (!adminEmails.includes(user.email || '')) {
-        router.push('/admin/unauthorized')
-        return
-      }
-
-      setUser(user)
     }
 
-    checkAuth()
-  }, [router])
+    getUserInfo()
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

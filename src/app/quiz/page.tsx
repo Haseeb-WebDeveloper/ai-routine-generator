@@ -39,37 +39,6 @@ export default function QuizPage() {
     }
   }, []);
 
-  // Debug: Check all cookies on mount
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const allCookies = document.cookie;
-      console.log('Quiz page - all cookies:', allCookies);
-      
-      // Check specific cookies
-      const quizEmail = getCookie('quiz_email');
-      const quizUserId = getCookie('quiz_user_id');
-      const quizVerified = getCookie('quiz_verified');
-      const quizName = getCookie('quiz_name');
-      
-      console.log('Quiz page - specific cookies:', {
-        quizEmail,
-        quizUserId,
-        quizVerified,
-        quizName
-      });
-
-      // If we have authentication cookies but still have URL parameters, clean the URL
-      if (quizEmail && quizUserId && quizVerified === '1') {
-        const url = new URL(window.location.href);
-        if (url.searchParams.has('email') || url.searchParams.has('token')) {
-          console.log('Cleaning URL parameters after authentication');
-          const cleanUrl = url.pathname;
-          window.history.replaceState({}, '', cleanUrl);
-        }
-      }
-    }
-  }, []);
-
   // Check authentication status
   useEffect(() => {
     const checkAuth = () => {
@@ -100,17 +69,16 @@ export default function QuizPage() {
     resumeStream,
   } = useChat();
 
-  // On mount, send a start message as user (hidden later), and include USER_EMAIL if available
+  // On mount, send a start message as user (hidden later), always send START_PROMPT, and include USER_EMAIL if available
   useEffect(() => {
-    if (!hasSentInitial && isAuthenticated) {
+    if (!hasSentInitial) {
       setHasSentInitial(true);
       const cookieEmail = getCookie('quiz_email');
       const cookieName = getCookie('quiz_name');
-      
-      const initialText = cookieEmail
-        ? `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`
-        : START_PROMPT;
-      
+      let initialText = START_PROMPT;
+      if (cookieEmail) {
+        initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
+      }
       sendMessage({
         role: "user",
         parts: [{ text: initialText, type: "text" }],
@@ -119,7 +87,7 @@ export default function QuizPage() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSentInitial, isAuthenticated, sendMessage]);
+  }, [hasSentInitial, sendMessage]);
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
