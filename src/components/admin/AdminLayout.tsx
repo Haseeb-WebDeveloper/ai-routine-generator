@@ -31,20 +31,103 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
   const router = useRouter()
 
   useEffect(() => {
-    // Get current user info from Supabase (middleware already verified auth)
+    // Clear any old session data first
+    const clearOldSessions = () => {
+      const oldKeys = ['sb-auth-token', 'sb-xjwisdvcvxbzzvrntcxm-auth-token']
+      oldKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          console.log('🧹 Clearing old session key:', key)
+          localStorage.removeItem(key)
+        }
+      })
+    }
+    
+    clearOldSessions()
+    
+    // Get current user info from Supabase and handle authentication
     const getUserInfo = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
+      try {
+        // First, check if there's a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError)
+          // Clear any invalid session data
+          await supabase.auth.signOut()
+          router.push('/admin/login')
+          return
+        }
+
+        if (!session) {
+          console.log('❌ No valid session found')
+          // Clear any old session data from localStorage
+          localStorage.removeItem('sb-auth-token')
+          localStorage.removeItem('sb-xjwisdvcvxbzzvrntcxm-auth-token')
+          router.push('/admin/login')
+          return
+        }
+
+        // Get user from session
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError || !user) {
+          console.error('❌ User error:', userError)
+          await supabase.auth.signOut()
+          router.push('/admin/login')
+          return
+        }
+
+        console.log('✅ Valid user session found:', user.email)
+        
+        // Check if user is admin
+        const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+        console.log('👑 Admin emails from env:', adminEmails)
+        
+        if (!adminEmails.includes(user.email || '')) {
+          console.log('❌ User is not admin, signing out')
+          await supabase.auth.signOut()
+          router.push('/admin/login')
+          return
+        }
+
+        console.log('✅ User is admin, setting user info')
         setUser(user)
+        
+      } catch (error) {
+        console.error('❌ Error in getUserInfo:', error)
+        await supabase.auth.signOut()
+        router.push('/admin/login')
       }
     }
 
     getUserInfo()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
+    try {
+      // Clear all Supabase session data from localStorage
+      localStorage.removeItem('sb-auth-token')
+      localStorage.removeItem('sb-xjwisdvcvxbzzvrntcxm-auth-token')
+      
+      // Clear any other potential Supabase keys
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key)
+        }
+      })
+      
+      console.log('🧹 Cleared all Supabase session data')
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Redirect to login
+      router.push('/admin/login')
+    } catch (error) {
+      console.error('❌ Error during logout:', error)
+      // Force redirect even if there's an error
+      router.push('/admin/login')
+    }
   }
 
   const tabs = [

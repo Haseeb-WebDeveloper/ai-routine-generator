@@ -22,13 +22,22 @@ export default function AdminLogin() {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
+      console.log('🔍 Checking if user is already logged in...')
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('👤 Current user from Supabase:', user)
+      
       if (user) {
         // Check if user is admin
         const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+        console.log('👑 Admin emails from env:', adminEmails)
+        console.log('🔍 Is current user admin?', adminEmails.includes(user.email || ''))
+        
         if (adminEmails.includes(user.email || '')) {
+          console.log('✅ User is already logged in as admin, redirecting')
           router.push('/admin')
         }
+      } else {
+        console.log('❌ No user currently logged in')
       }
     }
     checkUser()
@@ -40,29 +49,44 @@ export default function AdminLogin() {
     setError('')
 
     try {
+      console.log('🔐 Attempting admin login for:', email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        console.error('❌ Login error:', error)
         setError(error.message)
         return
       }
 
       if (data.user) {
+        console.log('✅ Login successful for user:', data.user.email)
+        console.log('🔑 Session data:', data.session)
+        
         // Check if user is admin
         const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+        console.log('👑 Admin emails from env:', adminEmails)
+        
         if (adminEmails.includes(data.user.email || '')) {
+          console.log('✅ User is admin, redirecting to dashboard')
           toast.success('Login successful!')
-          router.push('/admin')
+          
+          // Wait a moment for cookies to be set
+          setTimeout(() => {
+            router.push('/admin')
+          }, 100)
         } else {
+          console.log('❌ User is not admin, signing out')
           // User is not an admin, sign them out
           await supabase.auth.signOut()
           setError('Access denied. You are not authorized to access the admin panel.')
         }
       }
     } catch (error) {
+      console.error('❌ Unexpected error:', error)
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
@@ -156,15 +180,6 @@ export default function AdminLogin() {
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-4">
             Only authorized administrators can access this panel
-          </p>
-          <p className="text-sm text-gray-600">
-            Need an admin account?{' '}
-            <button
-              onClick={() => router.push('/admin/register')}
-              className="text-blue-600 hover:text-blue-500 font-medium"
-            >
-              Register here
-            </button>
           </p>
         </div>
       </div>

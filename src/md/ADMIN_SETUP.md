@@ -47,7 +47,6 @@ bun install
    - Configure your site URL (for development, use `http://localhost:3000`)
    - Add redirect URLs:
      - `http://localhost:3000/admin/login`
-     - `http://localhost:3000/admin/register`
 
 2. **Get Your Service Role Key**:
    - Go to your Supabase dashboard → Settings → API
@@ -69,11 +68,6 @@ bun install
    - Update your environment variables
    - Skip email verification
 
-   **Option B: Using the Registration Page**
-   - Navigate to `http://localhost:3000/admin/register`
-   - Create an account with an email that's in your `ADMIN_EMAILS` list
-   - Verify your email (check your inbox)
-   - Sign in at `http://localhost:3000/admin/login`
 
 ### 5. Run the Development Server
 

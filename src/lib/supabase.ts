@@ -4,7 +4,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    storageKey: 'sb-auth-token',
+    detectSessionInUrl: true
+  }
+})
 
 // Admin client for server-side operations that require elevated privileges
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
