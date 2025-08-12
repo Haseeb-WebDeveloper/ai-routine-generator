@@ -52,7 +52,7 @@ export const planAndSendRoutine = tool({
       skinConcerns: z
         .array(z.string())
         .optional()
-        .describe("User's skin concerns"),
+        .describe("User's skin concerns in array format like [acne, aging, dark spots, dullness, sensitivity, etc.] for no skin concerns provide empty array []"),
       budget: z.string().optional().describe("User's budget"),
       gender: z.string().optional().describe("User's gender"),
       age: z.string().optional().describe("User's age"),
