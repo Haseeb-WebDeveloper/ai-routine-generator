@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 import Papa from 'papaparse'
 import { UserCreateData } from '@/types/admin'
 
@@ -59,12 +59,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing emails
-    const { data: existingUsers } = await supabase
-      .from('user_emails')
-      .select('email')
-      .in('email', users.map(u => u.email))
+    const existingUsers = await prisma.userEmail.findMany({
+      where: {
+        email: {
+          in: users.map(u => u.email)
+        }
+      },
+      select: {
+        email: true
+      }
+    })
 
-    const existingEmails = existingUsers?.map(user => user.email) || []
+    const existingEmails = existingUsers.map(user => user.email)
     const newUsers = users.filter(user => !existingEmails.includes(user.email))
 
     if (newUsers.length === 0) {
@@ -80,50 +86,21 @@ export async function POST(request: NextRequest) {
     // Process each new user
     for (const userData of newUsers) {
       try {
-        // Generate a secure random password for the user
-        const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
-        
-        // Create Supabase auth user
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: userData.email,
-          password: password,
-          email_confirm: true,
-          user_metadata: {
-            name: userData.name,
-            full_name: userData.name
-          }
-        })
-
-        if (authError || !authUser.user) {
-          console.log('authError for', userData.email, ':', authError)
-          errors.push(`Failed to create auth account for ${userData.email}: ${authError?.message}`)
-          continue
-        }
-
         // Generate secure token for direct quiz access
         const timestamp = Date.now()
         const secureToken = btoa(`${userData.email}:${timestamp}:${Math.random().toString(36)}`)
         
-        // Create user_emails record
-        const { data: userEmail, error: insertError } = await supabase
-          .from('user_emails')
-          .insert({
+        // Create user record directly with Prisma
+        const userEmail = await prisma.userEmail.create({
+          data: {
             email: userData.email,
             name: userData.name,
-            is_active: true,
-            quiz_completed: false,
-            user_id: authUser.user.id,
-            unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`
-          })
-          .select()
-          .single()
-
-        if (insertError || !userEmail) {
-          errors.push(`Failed to create user record for ${userData.email}: ${insertError?.message}`)
-          // Clean up auth user if user_emails creation failed
-          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
-          continue
-        }
+            isActive: true,
+            quizCompleted: false,
+            uniqueLink: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`,
+            role: 'user' // Default role for new users
+          }
+        })
 
         insertedUsers.push(userEmail)
 

@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const { data: campaigns, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const campaigns = await prisma.campaign.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        template: true // Include template data
+      }
+    })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    // Transform the data to match frontend expectations
+    const transformedCampaigns = campaigns.map(campaign => ({
+      id: campaign.id,
+      name: campaign.name,
+      description: campaign.description,
+      template_id: campaign.templateId, // Convert camelCase to snake_case
+      selected_users: campaign.selectedUsers, // Convert camelCase to snake_case
+      status: campaign.status,
+      scheduled_at: campaign.scheduledAt?.toISOString(), // Convert Date to string
+      sent_at: campaign.sentAt?.toISOString(), // Convert Date to string
+      created_at: campaign.createdAt.toISOString(), // Convert Date to string
+      updated_at: campaign.updatedAt.toISOString(), // Convert Date to string
+      stats: campaign.stats
+    }))
 
-    return NextResponse.json({ campaigns })
+    return NextResponse.json({ campaigns: transformedCampaigns })
   } catch (error) {
+    console.error('Error fetching campaigns:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -28,22 +44,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { data: campaign, error } = await supabase
-      .from('campaigns')
-      .insert({
+    const campaign = await prisma.campaign.create({
+      data: {
         name,
         description,
-        template_id,
-        selected_users,
+        templateId: template_id,
+        selectedUsers: selected_users,
         status: 'draft',
-        scheduled_at: scheduled_at || null
-      })
-      .select()
-      .single()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+        scheduledAt: scheduled_at || null
+      }
+    })
 
     return NextResponse.json({ campaign })
   } catch (error) {

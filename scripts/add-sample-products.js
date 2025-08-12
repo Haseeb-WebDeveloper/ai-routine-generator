@@ -1,10 +1,198 @@
-const { createClient } = require('@supabase/supabase-js')
+const { PrismaClient } = require('@prisma/client')
 require('dotenv').config()
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+const prisma = new PrismaClient()
+
+// Type-safe enum mapping functions
+const mapProductType = (type) => {
+  const typeMap = {
+    'cleanser': 'CLEANSER',
+    'moisturizer': 'MOISTURIZER',
+    'sunscreen': 'SUNSCREEN',
+    'toner': 'TONER',
+    'essence': 'ESSENCE',
+    'hydrating mist': 'HYDRATING_MIST',
+    'face mist': 'FACE_MIST',
+    'serum': 'SERUM',
+    'ampoule': 'AMPOULE',
+    'spot treatment': 'SPOT_TREATMENT',
+    'exfoliant (chemical)': 'EXFOLIANT_CHEMICAL',
+    'exfoliator (physical)': 'EXFOLIATOR_PHYSICAL',
+    'retinoid': 'RETINOID',
+    'retinol': 'RETINOL',
+    'peptide treatment': 'PEPTIDE_TREATMENT',
+    'vitamin c treatment': 'VITAMIN_C_TREATMENT',
+    'niacinamide treatment': 'NIACINAMIDE_TREATMENT',
+    'brightening treatment': 'BRIGHTENING_TREATMENT',
+    'anti-aging treatment': 'ANTI_AGING_TREATMENT',
+    'sleeping mask': 'SLEEPING_MASK',
+    'night cream': 'NIGHT_CREAM',
+    'overnight treatment': 'OVERNIGHT_TREATMENT',
+    'face oil': 'FACE_OIL',
+    'eye cream': 'EYE_CREAM',
+    'eye serum': 'EYE_SERUM',
+    'lip balm': 'LIP_BALM',
+    'lip treatment': 'LIP_TREATMENT',
+    'makeup remover': 'MAKEUP_REMOVER',
+    'cleansing balm': 'CLEANSING_BALM',
+    'micellar water': 'MICELLAR_WATER',
+    'oil cleanser': 'OIL_CLEANSER',
+    'face mask': 'FACE_MASK',
+    'sheet mask': 'SHEET_MASK',
+    'clay mask': 'CLAY_MASK',
+    'peel-off mask': 'PEEL_OFF_MASK',
+    'scrub mask': 'SCRUB_MASK',
+    'hydrating mask': 'HYDRATING_MASK',
+    'detox mask': 'DETOX_MASK',
+    'barrier repair cream': 'BARRIER_REPAIR_CREAM',
+    'cica cream': 'CICA_CREAM',
+    'soothing cream': 'SOOTHING_CREAM',
+    'anti-redness cream': 'ANTI_REDNESS_CREAM',
+    'pore minimizer': 'PORE_MINIMIZER',
+    'sebum control gel': 'SEBUM_CONTROL_GEL'
+  }
+  
+  const mapped = typeMap[type.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid product type: ${type}. Valid types: ${Object.keys(typeMap).join(', ')}`)
+  }
+  return mapped
+}
+
+const mapGender = (gender) => {
+  const genderMap = {
+    'male': 'MALE',
+    'female': 'FEMALE',
+    'unisex': 'UNISEX'
+  }
+  
+  const mapped = genderMap[gender.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid gender: ${gender}. Valid genders: ${Object.keys(genderMap).join(', ')}`)
+  }
+  return mapped
+}
+
+const mapBudgetRange = (budget) => {
+  const budgetMap = {
+    'low': 'LOW',
+    'medium': 'MEDIUM',
+    'high': 'HIGH'
+  }
+  
+  const mapped = budgetMap[budget.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid budget: ${budget}. Valid budgets: ${Object.keys(budgetMap).join(', ')}`)
+  }
+  return mapped
+}
+
+const mapCategory = (category) => {
+  const categoryMap = {
+    'core': 'CORE',
+    'treatment': 'TREATMENT',
+    'hydration': 'HYDRATION',
+    'special': 'SPECIAL',
+    'optional': 'OPTIONAL'
+  }
+  
+  const mapped = categoryMap[category.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid category: ${category}. Valid categories: ${Object.keys(categoryMap).join(', ')}`)
+  }
+  return mapped
+}
+
+const mapUseTime = (useTime) => {
+  const useTimeMap = {
+    'morning': 'MORNING',
+    'afternoon': 'AFTERNOON',
+    'evening': 'EVENING',
+    'night': 'NIGHT'
+  }
+  
+  return useTime.map(t => {
+    const mapped = useTimeMap[t.toLowerCase()]
+    if (!mapped) {
+      throw new Error(`Invalid use time: ${t}. Valid use times: ${Object.keys(useTimeMap).join(', ')}`)
+    }
+    return mapped
+  })
+}
+
+const mapFrequency = (frequency) => {
+  const frequencyMap = {
+    'daily': 'DAILY',
+    '2-3x/week': 'TWO_THREE_TIMES_WEEK',
+    'as needed': 'AS_NEEDED'
+  }
+  
+  const mapped = frequencyMap[frequency.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid frequency: ${frequency}. Valid frequencies: ${Object.keys(frequencyMap).join(', ')}`)
+  }
+  return mapped
+}
+
+const mapSkinTypes = (skinTypes) => {
+  const skinTypeMap = {
+    'dry': 'DRY',
+    'oily': 'OILY',
+    'combination': 'COMBINATION',
+    'sensitive': 'SENSITIVE',
+    'normal': 'NORMAL',
+    'all': 'DRY' // Map 'all' to 'DRY' as a default, or you could use multiple types
+  }
+  
+  return skinTypes.map(t => {
+    const mapped = skinTypeMap[t.toLowerCase()]
+    if (!mapped) {
+      throw new Error(`Invalid skin type: ${t}. Valid skin types: ${Object.keys(skinTypeMap).join(', ')}`)
+    }
+    return mapped
+  })
+}
+
+const mapSkinConcerns = (skinConcerns) => {
+  const skinConcernMap = {
+    'acne': 'ACNE',
+    'blackheads': 'BLACKHEADS',
+    'dullness': 'DULLNESS',
+    'hyperpigmentation': 'HYPERPIGMENTATION',
+    'fine lines': 'FINE_LINES',
+    'dehydration': 'DEHYDRATION',
+    'redness': 'REDNESS',
+    'pores': 'PORES',
+    'uneven texture': 'UNEVEN_TEXTURE',
+    'sun damage': 'HYPERPIGMENTATION' // Map 'sun damage' to closest concern
+  }
+  
+  return skinConcerns.map(c => {
+    const mapped = skinConcernMap[c.toLowerCase()]
+    if (!mapped) {
+      throw new Error(`Invalid skin concern: ${c}. Valid skin concerns: ${Object.keys(skinConcernMap).join(', ')}`)
+    }
+    return mapped
+  })
+}
+
+const mapTexture = (texture) => {
+  const textureMap = {
+    'gel': 'GEL',
+    'cream': 'CREAM',
+    'lotion': 'LOTION',
+    'foam': 'FOAM',
+    'oil': 'OIL',
+    'spray': 'SPRAY',
+    'serum': 'GEL' // Map 'serum' to 'GEL' as closest texture
+  }
+  
+  const mapped = textureMap[texture.toLowerCase()]
+  if (!mapped) {
+    throw new Error(`Invalid texture: ${texture}. Valid textures: ${Object.keys(textureMap).join(', ')}`)
+  }
+  return mapped
+}
 
 const sampleProducts = [
   {
@@ -202,7 +390,7 @@ const sampleProducts = [
     category: "core",
     use_time: ["morning"],
     frequency: "daily",
-    skin_types: ["all"],
+    skin_types: ["dry", "normal", "combination", "oily", "sensitive"], // Changed from "all" to specific types
     skin_concerns: ["sun damage", "hyperpigmentation"],
     ingredients: [
       {
@@ -307,25 +495,75 @@ const sampleProducts = [
 async function addSampleProducts() {
   console.log('Adding sample products to database...')
   
+  let successCount = 0
+  let errorCount = 0
+  
   try {
     for (const product of sampleProducts) {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([product])
-        .select()
+      try {
+        console.log(`\n🔄 Processing: ${product.name}...`)
+        
+        // Transform the data to match Prisma schema with proper enum mapping
+        const productData = {
+          name: product.name,
+          brand: product.brand,
+          type: mapProductType(product.type),
+          gender: mapGender(product.gender),
+          age: product.age,
+          budget: mapBudgetRange(product.budget),
+          category: mapCategory(product.category),
+          useTime: mapUseTime(product.use_time),
+          frequency: mapFrequency(product.frequency),
+          skinTypes: mapSkinTypes(product.skin_types),
+          skinConcerns: mapSkinConcerns(product.skin_concerns),
+          ingredients: product.ingredients,
+          avoidWith: product.avoid_with,
+          texture: mapTexture(product.texture),
+          comedogenic: product.comedogenic,
+          fragranceFree: product.fragrance_free,
+          alcoholFree: product.alcohol_free,
+          crueltyFree: product.cruelty_free,
+          vegan: product.vegan,
+          instructions: product.instructions,
+          benefits: product.benefits,
+          warnings: product.warnings,
+          priceUsd: product.price_usd,
+          purchaseLink: product.purchase_link,
+          imageUrl: product.image_url
+        }
 
-      if (error) {
-        console.error(`Error adding ${product.name}:`, error)
-      } else {
-        console.log(`✅ Added: ${product.name} (${product.brand})`)
+        console.log(`✅ Mapped enums for ${product.name}:`)
+        console.log(`   Type: ${product.type} → ${productData.type}`)
+        console.log(`   Gender: ${product.gender} → ${productData.gender}`)
+        console.log(`   Budget: ${product.budget} → ${productData.budget}`)
+        console.log(`   Category: ${product.category} → ${productData.category}`)
+        console.log(`   Frequency: ${product.frequency} → ${productData.frequency}`)
+        console.log(`   Texture: ${product.texture} → ${productData.texture}`)
+
+        const createdProduct = await prisma.product.create({
+          data: productData
+        })
+
+        console.log(`✅ Added: ${createdProduct.name} (${createdProduct.brand})`)
+        successCount++
+        
+      } catch (error) {
+        console.error(`❌ Error adding ${product.name}:`, error.message)
+        errorCount++
       }
     }
 
-    console.log('\n🎉 Sample products added successfully!')
+    console.log('\n🎉 Sample products processing complete!')
+    console.log(`✅ Successfully added: ${successCount} products`)
+    if (errorCount > 0) {
+      console.log(`❌ Failed to add: ${errorCount} products`)
+    }
     console.log('You can now view them in the admin panel under Products.')
     
   } catch (error) {
-    console.error('Error adding sample products:', error)
+    console.error('❌ Fatal error:', error.message)
+  } finally {
+    await prisma.$disconnect()
   }
 }
 

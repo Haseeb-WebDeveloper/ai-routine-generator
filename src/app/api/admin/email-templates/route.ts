@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const { data: templates, error } = await supabase
-      .from('email_templates')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const templates = await prisma.emailTemplate.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    // Transform the data to match frontend expectations
+    const transformedTemplates = templates.map(template => ({
+      id: template.id,
+      name: template.name,
+      subject: template.subject,
+      content: template.content,
+      created_at: template.createdAt.toISOString(), // Convert Date to string
+      updated_at: template.updatedAt.toISOString() // Convert Date to string
+    }))
 
-    return NextResponse.json({ templates })
+    return NextResponse.json({ templates: transformedTemplates })
   } catch (error) {
+    console.error('Error fetching email templates:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -28,19 +36,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { data: template, error } = await supabase
-      .from('email_templates')
-      .insert({
+    const template = await prisma.emailTemplate.create({
+      data: {
         name,
         subject,
         content
-      })
-      .select()
-      .single()
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+      }
+    })
 
     return NextResponse.json({ template })
   } catch (error) {

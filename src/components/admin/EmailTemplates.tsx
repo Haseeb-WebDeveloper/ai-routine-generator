@@ -273,7 +273,7 @@ export default function EmailTemplates() {
                   required
                 />
                 <p className="text-sm text-gray-500">
-                  Use <code className="bg-gray-100 px-1 rounded">LINK</code> to insert the unique quiz link
+                  Use <code className="bg-gray-100 px-1 rounded">NAME</code> and <code className="bg-gray-100 px-1 rounded">LINK</code> to insert name and unique quiz link
                 </p>
               </div>
 

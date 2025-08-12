@@ -1,13 +1,11 @@
 import { sendMail } from "./send-mail";
-import { findBestProducts } from "./find-best-products";
-import { buildRoutine } from "./build-routine";
-import { planRoutine } from "./plan-routine";
 import { planAndSendRoutine } from "./plan-and-send";
+import { detectSkinTypeFromQuestions } from "./detect-skin-type-from-questions";
+import { analyzeSkinTypeFromImage } from "./detect-skin-type-from-image";
 
 export const agentTools = {
-  //   find_best_products: findBestProducts,
-  //   build_routine: buildRoutine,
-  //   plan_routine: planRoutine,
-  send_mail: sendMail,
+  // send_mail: sendMail,
   plan_and_send_routine: planAndSendRoutine,
+  detect_skin_type_from_questions: detectSkinTypeFromQuestions,
+  analyze_skin_type_from_image: analyzeSkinTypeFromImage,
 } as const;
