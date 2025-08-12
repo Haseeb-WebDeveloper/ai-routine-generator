@@ -7,11 +7,14 @@ import {
   XCircle,
   Loader2,
   Settings,
+  Camera,
+  Upload,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
 import Navbar from "@/components/Navbar";
 import { RoutineWithProducts } from "@/components/ui/RoutineWithProducts";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -19,6 +22,7 @@ export default function QuizPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [hasSentInitial, setHasSentInitial] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const START_PROMPT = "Hi! I'm ready to start.";
 
   // Lightweight cookie reader
@@ -117,6 +121,23 @@ export default function QuizPage() {
     }
   };
 
+  const handleImageUpload = async (imageUrl: string) => {
+    try {
+      // Send the image URL to the AI for skin type analysis
+      await sendMessage({
+        role: "user",
+        parts: [{ 
+          text: `I've uploaded an image of my skin for analysis. Please analyze it to determine my skin type. Image URL: ${imageUrl}`, 
+          type: "text" 
+        }],
+      });
+      toast.success("Image sent for analysis!");
+    } catch (err) {
+      console.error("Failed to send image for analysis:", err);
+      toast.error("Failed to send image for analysis. Please try again.");
+    }
+  };
+
   const resetQuiz = () => {
     setMessages([]);
     toast.success("Chat cleared!");
@@ -172,6 +193,10 @@ export default function QuizPage() {
           return "Generating Routine";
         } else if (toolName.includes("send_mail")) {
           return "Sending Mail";
+        } else if (toolName.includes("detect_skin_type_from_questions")) {
+          return "Analyzing Skin Type (Questions)";
+        } else if (toolName.includes("analyze_skin_type_from_image")) {
+          return "Analyzing Skin Type (Image)";
         }
         return `Using ${toolName}`;
       }
@@ -240,7 +265,7 @@ export default function QuizPage() {
                     <div className="rounded-lg px-4 py-3">
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>AI is thinking...</span>
+                        <span>Lavera is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -261,16 +286,28 @@ export default function QuizPage() {
 
               {/* Input Form */}
               <form className="flex flex-col lg:flex-row space-x-2" onSubmit={handleFormSubmit}>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your message here..."
-                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-0 lg:mb-0 mb-2"
-                  disabled={isLoading || isStreaming}
-                  autoFocus
-                />
+                <div className="flex-1 flex space-x-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type your message here..."
+                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-0 lg:mb-0 mb-2"
+                    disabled={isLoading || isStreaming}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => setShowImageUpload(true)}
+                    variant="outline"
+                    className="px-3 py-2 lg:mb-0 mb-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                    disabled={isLoading || isStreaming}
+                    title="Upload image for skin type analysis"
+                  >
+                    <Upload className="h-4 w-4 text-blue-600" />
+                  </Button>
+                </div>
                 <Button
                   type="submit"
                   disabled={!input.trim() || isLoading || isStreaming}
@@ -286,7 +323,7 @@ export default function QuizPage() {
 
               {/* Reset Button */}
               {messages.length > 0 && (
-                <div className="hidden lg:block lg:mt-4 text-center">
+                <div className="mt-4 text-center">
                   <Button
                     onClick={resetQuiz}
                     variant="outline"
@@ -301,6 +338,13 @@ export default function QuizPage() {
           </div>
         </div>
       </div>
+
+      {/* Image Upload Modal */}
+      <ImageUpload
+        isOpen={showImageUpload}
+        onClose={() => setShowImageUpload(false)}
+        onImageUpload={handleImageUpload}
+      />
     </div>
   );
 }

@@ -83,9 +83,10 @@ export const planAndSendRoutine = tool({
       const email = profile.email;
 
       // Get base URL for API calls
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                     process.env.NEXT_PUBLIC_APP_URL || 
-                     "http://localhost:3000";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "http://localhost:3000";
 
       console.log("[TOOL/plan_and_send] normalized inputs:", {
         skinType,
@@ -105,31 +106,36 @@ export const planAndSendRoutine = tool({
 
       // Call the product search API instead of using Prisma directly
 
-      const searchResponse = await fetch(`${baseUrl}/api/tools/product-search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          skinType,
-          skinConcerns,
-          budget,
-          gender
-        })
-      });
+      const searchResponse = await fetch(
+        `${baseUrl}/api/tools/product-search`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            skinType,
+            skinConcerns,
+            budget,
+            gender,
+          }),
+        }
+      );
 
       if (!searchResponse.ok) {
-        throw new Error('Failed to search for products');
+        throw new Error("Failed to search for products");
       }
 
       const searchResult = await searchResponse.json();
-      
+
       if (!searchResult.success) {
-        throw new Error(searchResult.error || 'Product search failed');
+        throw new Error(searchResult.error || "Product search failed");
       }
 
       const candidates: ProductCandidate[] = searchResult.products || [];
-      console.log(`[TOOL/plan_and_send] Found ${candidates.length} products via API`);
+      console.log(
+        `[TOOL/plan_and_send] Found ${candidates.length} products via API`
+      );
 
       const system = `
       You are an expert skincare consultant.
@@ -167,8 +173,6 @@ export const planAndSendRoutine = tool({
       const summary =
         (text || "").trim() ||
         "Your personalized routine will appear here after we finish collecting your preferences.";
-
-
 
       const response = await fetch(`${baseUrl}/api/send-mail`, {
         method: "POST",
