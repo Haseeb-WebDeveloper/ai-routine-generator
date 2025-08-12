@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { UserEmail, UserCreateData } from '@/types/admin'
-import { createClient } from '@supabase/supabase-js'
+import bcrypt from 'bcryptjs'
 
 export async function GET() {
   try {
-    const { data: users, error } = await supabase
-      .from('user_emails')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const users = await prisma.userEmail.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    // Transform the data to match frontend expectations
+    const transformedUsers = users.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      is_active: user.isActive, // Convert camelCase to snake_case
+      quiz_completed: user.quizCompleted, // Convert camelCase to snake_case
+      unique_link: user.uniqueLink, // Convert camelCase to snake_case
+      user_id: user.userId, // Convert camelCase to snake_case
+      role: user.role,
+      created_at: user.createdAt.toISOString(), // Convert Date to string
+      updated_at: user.updatedAt.toISOString() // Convert Date to string
+    }))
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users: transformedUsers })
   } catch (error) {
+    console.error('Error fetching users:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -51,14 +63,20 @@ export async function POST(request: NextRequest) {
     console.log('validUsers', validUsers)
 
     // Check for existing emails
-    const { data: existingUsers } = await supabase
-      .from('user_emails')
-      .select('email')
-      .in('email', validUsers.map(u => u.email))
+    const existingUsers = await prisma.userEmail.findMany({
+      where: {
+        email: {
+          in: validUsers.map(u => u.email)
+        }
+      },
+      select: {
+        email: true
+      }
+    })
 
     console.log('existingUsers', existingUsers)
 
-    const existingEmails = existingUsers?.map(user => user.email) || []
+    const existingEmails = existingUsers.map(user => user.email)
     const newUsers = validUsers.filter(user => !existingEmails.includes(user.email))
 
     if (newUsers.length === 0) {
@@ -74,61 +92,32 @@ export async function POST(request: NextRequest) {
     // Process each new user
     for (const userData of newUsers) {
       try {
-
         console.log('userData', userData)
-
-        // Generate a secure random password for the user
-        const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
-        
-        // Create Supabase auth user
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: userData.email,
-          password: password,
-          email_confirm: true,
-          user_metadata: {
-            name: userData.name,
-            full_name: userData.name
-          }
-        })
-
-        console.log('authUser', authUser)
-        if (authError) {
-          console.log('authError', authError)
-        }
-
-        if (authError || !authUser.user) {
-          errors.push(`Failed to create auth account for ${userData.email}: ${authError?.message}`)
-          continue
-        }
 
         // Generate secure token for direct quiz access
         const timestamp = Date.now()
         const secureToken = btoa(`${userData.email}:${timestamp}:${Math.random().toString(36)}`)
         
-        // Create user_emails record
-        const { data: userEmail, error: insertError } = await supabase
-          .from('user_emails')
-          .insert({
+        // Create user record directly with Prisma
+        const userEmail = await prisma.userEmail.create({
+          data: {
             email: userData.email,
             name: userData.name,
-            is_active: true,
-            quiz_completed: false,
-            user_id: authUser.user.id,
-            unique_link: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`
-          })
-          .select()
-          .single()
+            isActive: true,
+            quizCompleted: false,
+            uniqueLink: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`,
+            role: 'user' // Default role for new users
+          }
+        })
 
         console.log('userEmail', userEmail)
-
-        if (insertError || !userEmail) {
-          errors.push(`Failed to create user record for ${userData.email}: ${insertError?.message}`)
-          // Clean up auth user if user_emails creation failed
-          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
-          continue
-        }
-
-        insertedUsers.push(userEmail)
+        insertedUsers.push({
+          ...userEmail,
+          is_active: userEmail.isActive,
+          quiz_completed: userEmail.quizCompleted,
+          created_at: userEmail.createdAt.toISOString(),
+          updated_at: userEmail.updatedAt.toISOString()
+        })
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'

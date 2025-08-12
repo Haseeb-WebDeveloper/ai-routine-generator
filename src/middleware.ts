@@ -170,15 +170,38 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // For now, let's use a simpler approach - just check if user is accessing from a valid session
-    // We'll implement proper server-side auth later
+    // Check for valid admin session
+    const sessionToken = request.cookies.get('admin-session')?.value
     
-    console.log('🔧 Admin route access allowed (auth handled client-side)')
-    
-    // TEMPORARY: Allow access to admin routes for now
-    // TODO: Implement proper server-side authentication
-    console.log('⚠️  TEMPORARY: Allowing admin access (auth will be implemented properly)')
-    return NextResponse.next()
+    if (!sessionToken) {
+      console.log('❌ No admin session found, redirecting to login')
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    try {
+      // Validate session token
+      const sessionData = JSON.parse(atob(sessionToken))
+      
+      // Check if session is not expired (7 days)
+      const sessionAge = Date.now() - sessionData.timestamp
+      if (sessionAge > 7 * 24 * 60 * 60 * 1000) {
+        console.log('❌ Admin session expired, redirecting to login')
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+
+      // Check if user has admin role
+      if (sessionData.role !== 'admin') {
+        console.log('❌ User is not admin, redirecting to login')
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+
+      console.log('✅ Admin session valid, allowing access')
+      return NextResponse.next()
+      
+    } catch (error) {
+      console.log('❌ Invalid admin session, redirecting to login')
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
   }
 
   return NextResponse.next()

@@ -45,21 +45,34 @@ export default function Campaigns() {
 
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json()
-        setCampaigns(campaignsData.campaigns)
+        setCampaigns(campaignsData.campaigns || [])
+      } else {
+        console.error('Campaigns API error:', campaignsRes.status)
+        setCampaigns([])
       }
 
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json()
-        setTemplates(templatesData.templates)
+        setTemplates(templatesData.templates || [])
+      } else {
+        console.error('Templates API error:', templatesRes.status)
+        setTemplates([])
       }
 
       if (usersRes.ok) {
         const usersData = await usersRes.json()
-        setUsers(usersData.users)
+        setUsers(usersData.users || [])
+      } else {
+        console.error('Users API error:', usersRes.status)
+        setUsers([])
       }
     } catch (error) {
       console.error('Error loading data:', error)
       toast.error('Failed to load data')
+      // Set empty arrays to prevent undefined errors
+      setCampaigns([])
+      setTemplates([])
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -131,7 +144,7 @@ export default function Campaigns() {
   }
 
   const handleTrigger = async (campaign: Campaign) => {
-    if (!confirm(`Are you sure you want to send this campaign to ${campaign.selected_users.length} users?`)) return
+    if (!confirm(`Are you sure you want to send this campaign to ${campaign.selected_users?.length || 0} users?`)) return
 
     // Add campaign to triggering set to show loading state
     setTriggeringCampaigns(prev => new Set(prev).add(campaign.id))
@@ -309,26 +322,30 @@ export default function Campaigns() {
                       onCheckedChange={handleSelectAll}
                     />
                     <Label htmlFor="select-all" className="font-medium">
-                      Select All ({users.length} users)
+                      Select All ({users?.length || 0} users)
                     </Label>
                   </div>
                   
                   <div className="space-y-2">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={user.id}
-                          checked={formData.selected_users.includes(user.email)}
-                          onCheckedChange={(checked) => handleUserSelect(user.email, checked as boolean)}
-                        />
-                        <Label htmlFor={user.id} className="text-sm">
-                          {user.name} ({user.email})
-                          {user.quiz_completed && (
-                            <Badge variant="secondary" className="ml-2">Quiz Completed</Badge>
-                          )}
-                        </Label>
-                      </div>
-                    ))}
+                    {users && users.length > 0 ? (
+                      users.map((user) => (
+                        <div key={user.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={user.id}
+                            checked={formData.selected_users.includes(user.email)}
+                            onCheckedChange={(checked) => handleUserSelect(user.email, checked as boolean)}
+                          />
+                                                   <Label htmlFor={user.id} className="text-sm">
+                           {user.name || 'Unknown'} ({user.email})
+                           {user.quiz_completed && (
+                             <Badge variant="secondary" className="ml-2">Quiz Completed</Badge>
+                           )}
+                         </Label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No users available</p>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -366,123 +383,125 @@ export default function Campaigns() {
       )}
 
       <div className="grid gap-4">
-        {campaigns.map((campaign) => {
-          const template = templates.find(t => t.id === campaign.template_id)
-          return (
-            <Card key={campaign.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{campaign.name}</CardTitle>
-                    <CardDescription>
-                      {campaign.description || 'No description'}
-                      {campaign.status === 'sent' && campaign.sent_at && (
-                        <span className="block text-xs text-green-600 mt-1">
-                          ✓ Sent on {new Date(campaign.sent_at).toLocaleString()}
-                        </span>
-                      )}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {getStatusBadge(campaign.status, campaign.sent_at)}
-                    <div className="flex space-x-1">
-                      {campaign.status === 'draft' && (
+        {campaigns && campaigns.length > 0 ? (
+          campaigns.map((campaign) => {
+            const template = templates.find(t => t.id === campaign.template_id)
+            return (
+              <Card key={campaign.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{campaign.name}</CardTitle>
+                      <CardDescription>
+                        {campaign.description || 'No description'}
+                        {campaign.status === 'sent' && campaign.sent_at && (
+                          <span className="block text-xs text-green-600 mt-1">
+                            ✓ Sent on {new Date(campaign.sent_at).toLocaleString()}
+                          </span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {getStatusBadge(campaign.status, campaign.sent_at)}
+                      <div className="flex space-x-1">
+                        {campaign.status === 'draft' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(campaign)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* Show trigger button for draft campaigns or campaigns that can be re-sent */}
+                        {(campaign.status === 'draft' || campaign.sent_at) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTrigger(campaign)}
+                            disabled={triggeringCampaigns.has(campaign.id)}
+                          >
+                            {triggeringCampaigns.has(campaign.id) ? (
+                              <>
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 mr-2" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4" />
+                                {campaign.sent_at ? 'Re-send' : 'Send'}
+                              </>
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(campaign)}
+                          onClick={() => handleDelete(campaign.id)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                      {/* Show trigger button for draft campaigns or campaigns that can be re-sent */}
-                      {(campaign.status === 'draft' || campaign.sent_at) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleTrigger(campaign)}
-                          disabled={triggeringCampaigns.has(campaign.id)}
-                        >
-                          {triggeringCampaigns.has(campaign.id) ? (
-                            <>
-                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 mr-2" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4" />
-                              {campaign.sent_at ? 'Re-send' : 'Send'}
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(campaign.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      {campaign.selected_users.length} recipients
-                    </span>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {campaign.selected_users?.length || 0} recipients
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        Template: {template?.name || 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        Created: {new Date(campaign.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      Template: {template?.name || 'Unknown'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      Created: {new Date(campaign.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
 
-                {campaign.stats && (
-                  <div className="border-t pt-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <BarChart3 className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Campaign Stats</span>
+                  {campaign.stats && (
+                    <div className="border-t pt-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <BarChart3 className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium">Campaign Stats</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                        <div>Total: {campaign.stats.total_recipients}</div>
+                        <div>Sent: {campaign.stats.sent}</div>
+                        <div>Delivered: {campaign.stats.delivered}</div>
+                        <div>Opened: {campaign.stats.opened}</div>
+                        <div>Clicked: {campaign.stats.clicked}</div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-                      <div>Total: {campaign.stats.total_recipients}</div>
-                      <div>Sent: {campaign.stats.sent}</div>
-                      <div>Delivered: {campaign.stats.delivered}</div>
-                      <div>Opened: {campaign.stats.opened}</div>
-                      <div>Clicked: {campaign.stats.clicked}</div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })
+        ) : (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns yet</h3>
+              <p className="text-gray-600 mb-4">Create your first email campaign to get started</p>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Campaign
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {campaigns.length === 0 && !showForm && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns yet</h3>
-            <p className="text-gray-600 mb-4">Create your first email campaign to get started</p>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Campaign
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+
     </div>
   )
 }

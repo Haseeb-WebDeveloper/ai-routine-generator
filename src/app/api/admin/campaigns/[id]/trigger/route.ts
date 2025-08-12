@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin } from '@/lib/supabase'
-import EmailTemplates from '@/components/admin/EmailTemplates'
+import { prisma } from '@/lib/prisma'
 
 // Klaviyo API configuration
 // const KLAVIYO_API_KEY = process.env.KLAVIYO_API_KEY
@@ -292,13 +291,11 @@ export async function POST(
     const { id } = await params
 
     // Get campaign details
-    const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id }
+    })
 
-    if (campaignError || !campaign) {
+    if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
@@ -309,25 +306,22 @@ export async function POST(
     }
 
     // Get email template
-    const { data: template, error: templateError } = await supabase
-      .from('email_templates')
-      .select('*')
-      .eq('id', campaign.template_id)
-      .single()
+    const template = await prisma.emailTemplate.findUnique({
+      where: { id: campaign.templateId }
+    })
 
-    if (templateError || !template) {
+    if (!template) {
       return NextResponse.json({ error: 'Email template not found' }, { status: 404 })
     }
 
     // Get user details for unique links
-    const { data: users, error: usersError } = await supabase
-      .from('user_emails')
-      .select('*')
-      .in('email', campaign.selected_users)
-
-    if (usersError) {
-      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
-    }
+    const users = await prisma.userEmail.findMany({
+      where: {
+        email: {
+          in: campaign.selectedUsers
+        }
+      }
+    })
 
     let sentCount = 0
     let failedCount = 0
@@ -336,10 +330,7 @@ export async function POST(
     // Send emails to each recipient
     for (const user of users) {
       try {
-        // Get user's auth details
-        const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(user.user_id)
-
-        // Generate secure token for direct quiz access with authentication
+        // Generate secure token for direct quiz access
         const timestamp = Date.now()
         const secureToken = btoa(`${user.email}:${timestamp}:${Math.random().toString(36)}`)
         
@@ -351,22 +342,22 @@ export async function POST(
         
         // Replace template variables
         let emailContent = template.content.replace(/\{\{LINK\}\}/g, directQuizLink)
-        emailContent = emailContent.replace(/\{\{name\}\}/g, user.name)
+        emailContent = emailContent.replace(/\{\{name\}\}/g, user.name || 'User')
         let emailSubject = template.subject
 
         console.log(`Email subject: ${emailSubject}`)
         console.log(`Email content length: ${emailContent.length}`)
 
         // Send email via Klaviyo
-        await sendEmailViaKlaviyo(user.email, emailSubject, emailContent, user.name)
+        await sendEmailViaKlaviyo(user.email, emailSubject, emailContent, user.name || 'User')
         sentCount++
         console.log(`✅ Email sent successfully to: ${user.email}`)
 
         // Update user's unique link in database
-        await supabase
-          .from('user_emails')
-          .update({ unique_link: directQuizLink })
-          .eq('id', user.id)
+        await prisma.userEmail.update({
+          where: { id: user.id },
+          data: { uniqueLink: directQuizLink }
+        })
 
       } catch (error) {
         failedCount++
@@ -377,27 +368,22 @@ export async function POST(
     }
 
     // Update campaign stats but keep status as 'draft' so it can be triggered again
-    const { error: updateError } = await supabase
-      .from('campaigns')
-      .update({
+    await prisma.campaign.update({
+      where: { id },
+      data: {
         // Keep status as 'draft' so campaign can be triggered multiple times
         status: 'draft',
-        sent_at: new Date().toISOString(),
+        sentAt: new Date(),
         stats: {
-          total_recipients: campaign.selected_users.length,
+          total_recipients: campaign.selectedUsers.length,
           sent: sentCount,
           delivered: sentCount, // Assuming sent = delivered for now
           opened: 0,
           clicked: 0,
           failed: failedCount
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-
-    if (updateError) {
-      console.error('Failed to update campaign stats:', updateError)
-    }
+        }
+      }
+    })
 
     return NextResponse.json({
       message: 'Campaign triggered successfully',

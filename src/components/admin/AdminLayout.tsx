@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { supabase, isUserAdmin } from '@/lib/supabase'
 import { 
   Users, 
   Upload, 
@@ -31,73 +30,22 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
   const router = useRouter()
 
   useEffect(() => {
-    // Get current user info from Supabase and handle authentication
+    // Get current user info from session cookie
     const getUserInfo = async () => {
       try {
-        console.log('🔍 Starting getUserInfo...')
+        console.log('🔍 Getting user info from session...')
         
-        // First, check if there's a valid session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        console.log('📋 Session check result:', { 
-          hasSession: !!session, 
-          sessionError: sessionError?.message,
-          sessionId: session?.access_token?.substring(0, 20) + '...'
-        })
-        
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError)
-          // Clear any invalid session data
-          await supabase.auth.signOut()
-          router.push('/admin/login')
-          return
-        }
-
-        if (!session) {
+        const response = await fetch('/api/admin/check-session')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ User session valid:', data.user)
+          setUser(data.user)
+        } else {
           console.log('❌ No valid session found')
-          // Only clear localStorage if there's no session
-          localStorage.removeItem('sb-auth-token')
-          localStorage.removeItem('sb-xjwisdvcvxbzzvrntcxm-auth-token')
           router.push('/admin/login')
-          return
         }
-
-        // Get user from session
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        console.log('👤 User check result:', { 
-          hasUser: !!user, 
-          userError: userError?.message,
-          userEmail: user?.email 
-        })
-        
-        if (userError || !user) {
-          console.error('❌ User error:', userError)
-          await supabase.auth.signOut()
-          router.push('/admin/login')
-          return
-        }
-
-        console.log('✅ Valid user session found:', user.email)
-        
-        // Check if user is admin
-        console.log('🔐 Checking admin status for user:', user.id)
-        const isAdmin = await isUserAdmin(user.id)
-        console.log('👑 Admin status:', isAdmin)
-        
-        if (!isAdmin) {
-          console.log('❌ User is not admin, signing out')
-          await supabase.auth.signOut()
-          router.push('/admin/login')
-          return
-        }
-
-        console.log('✅ User is admin, setting user info')
-        setUser(user)
-        
       } catch (error) {
-        console.error('❌ Error in getUserInfo:', error)
-        await supabase.auth.signOut()
+        console.error('❌ Error getting user info:', error)
         router.push('/admin/login')
       }
     }
@@ -107,21 +55,10 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
 
   const handleLogout = async () => {
     try {
-      // Clear all Supabase session data from localStorage
-      localStorage.removeItem('sb-auth-token')
-      localStorage.removeItem('sb-xjwisdvcvxbzzvrntcxm-auth-token')
+      console.log('🧹 Logging out...')
       
-      // Clear any other potential Supabase keys
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('sb-')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      console.log('🧹 Cleared all Supabase session data')
-      
-      // Sign out from Supabase
-      await supabase.auth.signOut()
+      // Clear admin session cookie by calling logout API
+      await fetch('/api/admin/logout', { method: 'POST' })
       
       // Redirect to login
       router.push('/admin/login')

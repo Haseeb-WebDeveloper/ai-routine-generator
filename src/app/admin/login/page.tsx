@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, isEmailAdmin } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,23 +19,18 @@ export default function AdminLogin() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in by checking for admin session cookie
     const checkUser = async () => {
       console.log('🔍 Checking if user is already logged in...')
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('👤 Current user from Supabase:', user)
       
-      if (user) {
-        // Check if user is admin
-        const isAdmin = await isEmailAdmin(user.email || '')
-        console.log('👑 Is current user admin?', isAdmin)
-        
-        if (isAdmin) {
+      try {
+        const response = await fetch('/api/admin/check-session')
+        if (response.ok) {
           console.log('✅ User is already logged in as admin, redirecting')
           router.push('/admin')
         }
-      } else {
-        console.log('❌ No user currently logged in')
+      } catch (error) {
+        console.log('❌ No valid session found')
       }
     }
     checkUser()
@@ -50,39 +44,30 @@ export default function AdminLogin() {
     try {
       console.log('🔐 Attempting admin login for:', email)
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (error) {
-        console.error('❌ Login error:', error)
-        setError(error.message)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ Login error:', data.error)
+        setError(data.error || 'Login failed')
         return
       }
 
-      if (data.user) {
+      if (data.success) {
         console.log('✅ Login successful for user:', data.user.email)
-        console.log('🔑 Session data:', data.session)
+        toast.success('Login successful!')
         
-        // Check if user is admin
-        const isAdmin = await isEmailAdmin(data.user.email || '')
-        console.log('👑 Is current user admin?', isAdmin)
-        
-        if (isAdmin) {
-          console.log('✅ User is admin, redirecting to dashboard')
-          toast.success('Login successful!')
-          
-          // Wait a moment for cookies to be set
-          setTimeout(() => {
-            router.push('/admin')
-          }, 100)
-        } else {
-          console.log('❌ User is not admin, signing out')
-          // User is not an admin, sign them out
-          await supabase.auth.signOut()
-          setError('Access denied. You are not authorized to access the admin panel.')
-        }
+        // Wait a moment for cookies to be set
+        setTimeout(() => {
+          router.push('/admin')
+        }, 100)
       }
     } catch (error) {
       console.error('❌ Unexpected error:', error)
@@ -123,7 +108,7 @@ export default function AdminLogin() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Admin Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -168,7 +153,7 @@ export default function AdminLogin() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || !email || !password}
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>

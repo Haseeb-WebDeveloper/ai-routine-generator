@@ -2,43 +2,32 @@
 
 This directory contains utility scripts for the AI Routine project.
 
-## create-admin.cjs
+## create-prisma-admin.js
 
-A Node.js script to create admin accounts programmatically using Supabase Auth.
+A Bun script to create admin accounts programmatically using Prisma and bcrypt password hashing.
 
 ### Prerequisites
 
-1. **Supabase Service Role Key**: You need the service role key from your Supabase project
-   - Go to your Supabase dashboard
-   - Navigate to Settings → API
-   - Copy the "service_role" key (not the anon key)
-
-2. **Environment Variables**: Add to your `.env` file:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   ```
+1. **Database Connection**: Make sure your `DATABASE_URL` is set in your `.env` file
+2. **Prisma Setup**: Ensure Prisma is properly configured and the database is migrated
 
 ### Usage
 
-Run the script using npm/bun:
+Run the script using bun:
 
 ```bash
-# Using npm
-npm run create-admin
-
 # Using bun
-bun run create-admin
+bun run create-prisma-admin
 
 # Or directly
-node scripts/create-admin.cjs
+bun scripts/create-prisma-admin.js
 ```
 
 ### What the script does
 
 1. **Validates Input**: Checks email format and password requirements
-2. **Creates User**: Uses Supabase Auth admin API to create a confirmed user
-3. **Updates Environment**: Automatically adds the email to your admin environment variables
+2. **Hashes Password**: Uses bcrypt to securely hash the password
+3. **Creates User**: Creates a user record in the database with admin role
 4. **Provides Feedback**: Shows success/error messages and next steps
 
 ### Example Output
@@ -53,11 +42,8 @@ Confirm admin password: ********
 🔄 Creating admin account...
 ✅ Admin account created successfully!
 📧 Email: admin@example.com
-🆔 User ID: 12345678-1234-1234-1234-123456789abc
+🆔 User ID: clx1234567890abcdef
 📅 Created: 12/19/2024, 2:30:45 PM
-
-📝 Updating environment variables...
-✅ Environment variables updated successfully!
 
 🎉 Admin account setup complete!
 
@@ -69,57 +55,75 @@ Next steps:
 
 ### Security Notes
 
-- The script uses the Supabase service role key which has admin privileges
-- Keep your service role key secure and never commit it to version control
-- The script automatically confirms the email to avoid verification steps
+- Passwords are securely hashed using bcrypt with 12 salt rounds
+- The script creates users directly in the database (no external auth service)
 - Passwords are validated for minimum length (6 characters)
+- Admin role is automatically assigned
 
-### Troubleshooting
+## add-sample-products.js
 
-**"Missing required environment variables"**
-- Make sure you have both `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in your `.env`
+A Node.js script to add sample skincare products to the database for testing and development.
 
-**"Error creating user"**
-- Check that your Supabase project is active
-- Verify the service role key is correct
-- Ensure the email isn't already registered
+### Prerequisites
 
-**"Could not update .env file"**
-- The script will show you what to add manually
-- Make sure the `.env` file is writable
-
-## quick-setup.cjs
-
-A simplified script that creates a default admin account for quick testing and development.
+1. **Database Connection**: Make sure your `DATABASE_URL` is set in your `.env` file
+2. **Prisma Setup**: Ensure Prisma is properly configured and the database is migrated
 
 ### Usage
 
+Run the script using npm:
+
 ```bash
 # Using npm
-npm run quick-setup
-
-# Using bun
-bun run quick-setup
+npm run add-sample-products
 
 # Or directly
-node scripts/quick-setup.cjs
+node scripts/add-sample-products.js
 ```
 
-### What it creates
+### What the script does
 
-- **Email**: `admin@ai-routine.com`
-- **Password**: `admin123456`
-- **Status**: Email confirmed, ready to use immediately
+1. **Adds Sample Products**: Inserts 5 pre-configured skincare products
+2. **Type-Safe Enum Mapping**: Uses comprehensive mapping functions to convert frontend enum values to Prisma enum values
+3. **Provides Feedback**: Shows detailed mapping information and success/error messages for each product
+4. **Error Handling**: Continues processing other products if one fails, with detailed error reporting
 
-### Use Cases
+### Sample Products Included
 
-- **Development**: Quick setup for testing
-- **Demo**: Fast admin account creation for presentations
-- **CI/CD**: Automated setup for testing environments
+- **Gentle Daily Cleanser** (CeraVe) - Low budget, core category
+- **Vitamin C Brightening Serum** (The Ordinary) - Medium budget, treatment category
+- **Retinol Night Cream** (Neutrogena) - Medium budget, treatment category
+- **SPF 50+ Sunscreen** (La Roche-Posay) - Medium budget, core category
+- **Hydrating Face Mask** (Laneige) - High budget, hydration category
 
-### Security Warning
+### Features
 
-⚠️ **Never use the default credentials in production!**
-- The default password is publicly known
-- Always change the password after setup
-- Use `create-admin.cjs` for production environments
+- **Full Type Safety**: Comprehensive enum mapping with validation
+- **Complete Product Data**: Including ingredients, benefits, warnings, and all required fields
+- **Smart Mapping**: Handles edge cases like "serum" → "GEL" texture and "sun damage" → "HYPERPIGMENTATION"
+- **Detailed Logging**: Shows exactly how each enum value is mapped
+- **Robust Error Handling**: Individual product failures don't stop the entire process
+- **Automatic Database Disconnection**: Proper cleanup after completion
+
+### Type Safety Features
+
+The script now includes comprehensive type-safe enum mapping functions:
+
+- **Product Types**: Maps frontend types like "sleeping mask" to Prisma's "SLEEPING_MASK"
+- **Skin Types**: Maps "all" to specific skin types for better compatibility
+- **Frequencies**: Maps "2-3x/week" to "TWO_THREE_TIMES_WEEK"
+- **Textures**: Maps "serum" to "GEL" as the closest texture type
+- **Skin Concerns**: Maps "sun damage" to "HYPERPIGMENTATION"
+
+### Troubleshooting
+
+**"Error adding product"**
+- Check that your database is running and accessible
+- Verify the Prisma schema matches the expected structure
+- Ensure all required fields are properly formatted
+- Check the detailed error messages for specific enum mapping issues
+
+**"Invalid product type/gender/budget/etc"**
+- The script will show you exactly which values are valid
+- All enum mappings are validated before database insertion
+- Invalid values will cause the specific product to fail but won't stop other products

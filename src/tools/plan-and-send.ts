@@ -1,7 +1,27 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
 import { cohere } from "@ai-sdk/cohere";
+
+// Type-safe interfaces for the tool
+interface ProductCandidate {
+  name: string;
+  brand: string;
+  type: string;
+  price: number | null;
+  link: string;
+}
+
+interface ToolProfile {
+  skinType?: string;
+  skinConcerns?: string[];
+  budget?: string;
+  gender?: string;
+  age?: string;
+  allergies?: string;
+  climate?: string;
+  routineComplexity?: string;
+  email: string;
+}
 
 // Simple normalizers to keep inputs resilient
 function toStringOpt(value: unknown): string | undefined {
@@ -47,7 +67,8 @@ export const planAndSendRoutine = tool({
     .describe(
       "User profile inputs and email; all profile fields are optional and tolerant of free text"
     ),
-  execute: async (profile) => {
+
+  execute: async (profile: ToolProfile) => {
     try {
       console.log(
         "[TOOL/plan_and_send] === Starting routine planning and email sending ==="
@@ -60,6 +81,11 @@ export const planAndSendRoutine = tool({
       const gender = toStringOpt(profile.gender);
       const skinConcerns = toStringArrayOpt(profile.skinConcerns);
       const email = profile.email;
+
+      // Get base URL for API calls
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                     process.env.NEXT_PUBLIC_APP_URL || 
+                     "http://localhost:3000";
 
       console.log("[TOOL/plan_and_send] normalized inputs:", {
         skinType,
@@ -77,42 +103,33 @@ export const planAndSendRoutine = tool({
         throw new Error("property skinConcerns must have a type");
       }
 
-      let query = supabase.from("products").select("*");
+      // Call the product search API instead of using Prisma directly
 
-      if (skinType) query = query.contains("skin_types", [skinType]);
-      if (skinConcerns && skinConcerns.length > 0)
-        query = query.overlaps("skin_concerns", skinConcerns);
-      if (budget) {
-        const filters = [budget];
-        if (budget === "low") filters.push("medium");
-        query = query.in("budget", filters);
-      }
-      if (gender) query = query.in("gender", [gender, "unisex"]) as any;
+      const searchResponse = await fetch(`${baseUrl}/api/tools/product-search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          skinType,
+          skinConcerns,
+          budget,
+          gender
+        })
+      });
 
-      let { data, error } = await query
-        .order("popularity_score", { ascending: false })
-        .order("rating", { ascending: false })
-        .limit(12);
-      if (error) throw error;
-
-      // Fallbacks to avoid empty results
-      if (!data || data.length === 0) {
-        const topOverall = await supabase
-          .from("products")
-          .select("*")
-          .order("popularity_score", { ascending: false })
-          .order("rating", { ascending: false })
-          .limit(8);
-        data = topOverall.data || [];
+      if (!searchResponse.ok) {
+        throw new Error('Failed to search for products');
       }
 
-      const candidates = (data || []).map((p) => ({
-        name: p.name,
-        brand: p.brand,
-        type: p.type,
-        price: p.price_usd,
-        link: p.purchase_link,
-      }));
+      const searchResult = await searchResponse.json();
+      
+      if (!searchResult.success) {
+        throw new Error(searchResult.error || 'Product search failed');
+      }
+
+      const candidates: ProductCandidate[] = searchResult.products || [];
+      console.log(`[TOOL/plan_and_send] Found ${candidates.length} products via API`);
 
       const system = `
       You are an expert skincare consultant.
@@ -151,10 +168,7 @@ export const planAndSendRoutine = tool({
         (text || "").trim() ||
         "Your personalized routine will appear here after we finish collecting your preferences.";
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "http://localhost:3000";
+
 
       const response = await fetch(`${baseUrl}/api/send-mail`, {
         method: "POST",
@@ -192,6 +206,8 @@ export const planAndSendRoutine = tool({
         emailSent: false,
         error: err instanceof Error ? err.message : "Unknown error",
       };
+    } finally {
+      // Cleanup completed
     }
   },
 });

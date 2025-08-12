@@ -1,12 +1,15 @@
 export interface UserEmail {
   id: string
   email: string
-  name: string
-  created_at: string
+  name: string | null
+  passwordHash?: string | null
   is_active: boolean
   quiz_completed: boolean
-  unique_link?: string
-  user_id?: string // Reference to auth.users table
+  unique_link?: string | null
+  user_id?: string | null
+  role?: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface QuizResponse {

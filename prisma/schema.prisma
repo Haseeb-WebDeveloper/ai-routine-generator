@@ -14,12 +14,13 @@ datasource db {
 model UserEmail {
   id            String   @id @default(cuid())
   email         String   @unique
-  name          String?
+  name          String?  @default("User")
+  passwordHash  String?  @map("password_hash") // Add password hash field
   isActive      Boolean  @default(true) @map("is_active")
   quizCompleted Boolean  @default(false) @map("quiz_completed")
   uniqueLink    String?  @map("unique_link")
-  userId        String?  @map("user_id") // Reference to auth.users table
-  role          String?  @default("user") // admin, user
+  userId        String?  @map("user_id") // Keep this but make it optional
+  role          String?  @default("user")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -71,7 +72,7 @@ model Campaign {
   description   String?
   templateId    String         @map("template_id")
   selectedUsers String[]       @map("selected_users") // Array of user emails
-  status        CampaignStatus @default(DRAFT)
+  status        CampaignStatus @default(draft)
   scheduledAt   DateTime?      @map("scheduled_at")
   sentAt        DateTime?      @map("sent_at")
   stats         Json? // Campaign statistics
@@ -86,10 +87,10 @@ model Campaign {
 
 // Campaign status enum
 enum CampaignStatus {
-  DRAFT
-  SCHEDULED
-  SENT
-  CANCELLED
+  draft // lowercase like Supabase
+  scheduled
+  sent
+  cancelled
 }
 
 // Product database for skincare recommendations
@@ -117,11 +118,11 @@ model Product {
   instructions    String
   benefits        String[]
   warnings        String[]
-  priceUsd        Float         @map("price_usd")
+  priceUsd        Decimal       @map("price_usd") // Change from Float to Decimal
   purchaseLink    String        @map("purchase_link")
   imageUrl        String        @map("image_url")
-  popularityScore Float?        @map("popularity_score")
-  rating          Float?
+  popularityScore Int?          @map("popularity_score") // Change from Float to Int
+  rating          Decimal? // Change from Float to Decimal
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 

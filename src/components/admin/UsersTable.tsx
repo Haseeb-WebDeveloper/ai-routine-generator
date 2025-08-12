@@ -1,106 +1,112 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { 
-  Search, 
-  Trash2, 
-  Copy, 
-  CheckCircle, 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Search,
+  Trash2,
+  Copy,
+  CheckCircle,
   XCircle,
   RefreshCw,
   Users,
-  Mail
-} from 'lucide-react'
-import { UserEmail } from '@/types/admin'
-import toast from 'react-hot-toast'
+  Mail,
+} from "lucide-react";
+import { UserEmail } from "@/types/admin";
+import toast from "react-hot-toast";
 
 export default function UsersTable() {
-  const [users, setUsers] = useState<UserEmail[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<UserEmail[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [users, setUsers] = useState<UserEmail[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserEmail[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
-    const filtered = users.filter(user =>
+    const filtered = users.filter((user) =>
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    setFilteredUsers(filtered)
-  }, [users, searchTerm])
+    );
+    setFilteredUsers(filtered);
+  }, [users, searchTerm]);
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users')
-      const data = await response.json()
-      
+      const response = await fetch("/api/admin/users");
+      const data = await response.json();
+
       if (response.ok) {
-        setUsers(data.users || [])
+        setUsers(data.users || []);
       } else {
-        toast.error('Failed to fetch users')
+        toast.error("Failed to fetch users");
       }
     } catch (error) {
-      toast.error('An error occurred while fetching users')
+      toast.error("An error occurred while fetching users");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) {
-      return
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
     }
 
-    setIsDeleting(id)
+    setIsDeleting(id);
     try {
       const response = await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE',
-      })
+        method: "DELETE",
+      });
 
       if (response.ok) {
-        setUsers(users.filter(user => user.id !== id))
-        toast.success('User deleted successfully')
+        setUsers(users.filter((user) => user.id !== id));
+        toast.success("User deleted successfully");
       } else {
-        toast.error('Failed to delete user')
+        toast.error("Failed to delete user");
       }
     } catch (error) {
-      toast.error('An error occurred while deleting user')
+      toast.error("An error occurred while deleting user");
     } finally {
-      setIsDeleting(null)
+      setIsDeleting(null);
     }
-  }
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      toast.success('Copied to clipboard')
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
     } catch (error) {
-      toast.error('Failed to copy to clipboard')
+      toast.error("Failed to copy to clipboard");
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const stats = {
     total: users.length,
-    active: users.filter(u => u.is_active).length,
-    completed: users.filter(u => u.quiz_completed).length,
-    pending: users.filter(u => !u.quiz_completed).length
-  }
+    active: users.filter((u) => u.is_active).length,
+    completed: users.filter((u) => u.quiz_completed).length,
+    pending: users.filter((u) => !u.quiz_completed).length,
+  };
 
   if (isLoading) {
     return (
@@ -109,7 +115,7 @@ export default function UsersTable() {
           <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -122,43 +128,55 @@ export default function UsersTable() {
               <Users className="h-5 w-5 text-blue-500" />
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.total}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Users
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.active}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Mail className="h-5 w-5 text-purple-500" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Quiz Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Quiz Completed
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.completed}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <XCircle className="h-5 w-5 text-orange-500" />
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.pending}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -225,8 +243,13 @@ export default function UsersTable() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                          {searchTerm ? 'No users found matching your search' : 'No users found'}
+                        <td
+                          colSpan={5}
+                          className="px-6 py-4 text-center text-gray-500"
+                        >
+                          {searchTerm
+                            ? "No users found matching your search"
+                            : "No users found"}
                         </td>
                       </tr>
                     ) : (
@@ -238,32 +261,38 @@ export default function UsersTable() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.is_active 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {user.is_active ? 'Active' : 'Inactive'}
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.is_active
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {user.is_active ? "Active" : "Inactive"}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.quiz_completed 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {user.quiz_completed ? 'Completed' : 'Pending'}
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.quiz_completed
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {user.quiz_completed ? "Completed" : "Pending"}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(user.created_at)}
+                            {user.created_at}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                             {user.unique_link && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => copyToClipboard(user.unique_link!)}
+                                onClick={() =>
+                                  copyToClipboard(user.unique_link!)
+                                }
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -294,5 +323,5 @@ export default function UsersTable() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
