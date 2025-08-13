@@ -1,3 +1,4 @@
+import { formatRoutineText } from "@/lib/format-text-content";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { ProductCard } from "./ProductCard";
 import { ShoppingBag } from "lucide-react";
@@ -48,29 +49,7 @@ export function RoutineWithProducts({
 
   const { routineText, products } = parseContent(content);
 
-  // Convert markdown-style headers to HTML for better display
-  const formatRoutineText = (text: string) => {
-    return text
-      .replace(
-        /^## (.*$)/gim,
-        '<p class="text-lg font-bold text-foreground">$1</p>'
-      )
-      .replace(
-        /^### (.*$)/gim,
-        '<p class="text-lg font-semibold">$1</p>'
-      )
-      .replace(/^(\d+\.\s+.*$)/gim, '<p class="text-foreground">$1</p>')
-      .replace(/^- (.*$)/gim, '<li class="ml-2">$1</li>')
-      .replace(
-        /^Here is your personalized skincare routine:/gim,
-        '<p class="text-lg font-medium ">Here is your personalized skincare routine:</p>'
-      )
-    //   .replace(
-    //     /^We also have sent it to your email address: (.*?)\. Thank you for using our service!/gim,
-    //     '<p class="text-sm italic">We also have sent it to your email address: <span class="font-medium">$1</span>. Thank you for using our service!</p>'
-    //   )
-      .replace(/\n/g, "<br>");
-  };
+
 
   return (
     <div className={`space-y-12 ${className}`}>

@@ -16,6 +16,7 @@ import { useChat } from "@ai-sdk/react";
 import Navbar from "@/components/Navbar";
 import { RoutineWithProducts } from "@/components/ui/RoutineWithProducts";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { formatRoutineText } from "@/lib/format-text-content";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -110,11 +111,12 @@ export default function QuizPage() {
     if (!input.trim() || isLoading || isStreaming) return;
 
     try {
+      setInput("");
       await sendMessage({
         role: "user",
         parts: [{ text: input, type: "text" }],
       });
-      setInput("");
+      // setInput("");
       inputRef.current?.focus();
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -252,7 +254,7 @@ export default function QuizPage() {
                           content.includes('[PRODUCTS_JSON]') ? (
                             <RoutineWithProducts content={content} />
                           ) : (
-                            <p className="whitespace-pre-wrap">{content}</p>
+                            <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatRoutineText(content) }}></p>
                           )
                         )}
                       </div>
@@ -295,7 +297,7 @@ export default function QuizPage() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Type your message here..."
                     className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-0 lg:mb-0 mb-2"
-                    disabled={isLoading || isStreaming}
+                    // disabled={isLoading || isStreaming}
                     autoFocus
                   />
                   <Button

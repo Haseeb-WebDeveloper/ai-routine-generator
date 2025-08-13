@@ -48,7 +48,7 @@ export const planAndSendRoutine = tool({
     "Find best-fit products for the user's profile, generate a skincare routine routine, and send it to the user's email all in one step. Use this tool only after all 10 questions are answered.",
   inputSchema: z
     .object({
-      skinType: z.string().optional().describe("User's skin type. (dry, oily, combination, sensitive, normal)"),
+      skinType: z.string().optional().describe("User's skin type. (dry, oily, combination, sensitive, normal, asphyxiated)"),
       skinConcerns: z
         .array(z.string())
         .optional()
@@ -56,7 +56,7 @@ export const planAndSendRoutine = tool({
       budget: z.string().optional().describe("User's budget. (low, medium, high)"),
       gender: z.string().optional().describe("User's gender. (male, female)"),
       age: z.string().optional().describe("User's age. (18-25, 26-35, 36-45, 46-55, 56+)"),
-      allergies: z.string().optional().describe("User's allergies. (fragrance-free, avoid retinoids, etc.)"),
+      allergies: z.string().optional().describe("User's allergies. (fragrance-free, avoid retinoids, etc.) If no allergies then ignore this field as it is optional."),
       climate: z.string().optional().describe("User's climate. (humid, dry, cold, hot)"),
       routineComplexity: z
         .string()
@@ -65,7 +65,7 @@ export const planAndSendRoutine = tool({
       email: z.string().describe("User's email address to send the routine to. (example@gmail.com)"),
     })
     .describe(
-      "User profile inputs and email. Make sure all fields are provided and valid."
+      "User profile inputs and email. Make sure all provided fields are valid. Never use the word 'null' in any field."
     ),
 
   execute: async (profile: ToolProfile) => {
