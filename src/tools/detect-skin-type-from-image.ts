@@ -5,7 +5,7 @@ import { openai } from "@ai-sdk/openai";
 // Tool for analyzing skin type from image
 export const analyzeSkinTypeFromImage = tool({
   description:
-    "Analyze an uploaded image to determine skin type based on visual characteristics. Takes an image URL and returns skin type assessment.",
+    "Analyze an image url to determine skin type based on visual characteristics. Takes an image URL and returns skin type assessment. Use this tool only when you have the image url.",
   inputSchema: z.object({
     imageUrl: z
       .string()
@@ -144,7 +144,7 @@ Please analyze this skin image for skin type assessment based on the visual char
       }
 
       return {
-        message: `Based on my analysis of your skin image, I can see that you have ${skinType} skin with ${confidence}% confidence. ${reasoning}. Now let's continue with your skincare assessment - What are your main skin concerns? (acne, aging, dark spots, dullness, sensitivity, etc.)`,
+        message: `Based on my analysis of your skin image, I can see that you have ${skinType} skin with ${confidence}% confidence. Now let's continue with your skincare assessment - What are your main skin concerns? (acne, aging, dark spots, dullness, sensitivity, etc.)`,
       };
     } catch (err) {
       console.error("[TOOL/analyzeSkinTypeFromImage] error:", err);

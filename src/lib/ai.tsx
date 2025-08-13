@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages } from "ai";
+import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { cohere } from '@ai-sdk/cohere';
 import { PROMPT_TEMPLATES } from "./ai-config";
 import { agentTools } from "@/tools";
@@ -35,6 +35,7 @@ export async function aiAgent(messages: UIMessage[]) {
       model: cohere("command-r-plus"),
       messages: [{ role: "system", content: systemPrompt }, ...modelMessages],
       tools: agentTools,
+      stopWhen: stepCountIs(15),
       onFinish: async (event) => {
         console.log("[AI] Stream finished:");
         console.log("[AI] Final text:", event.text);

@@ -9,6 +9,7 @@ import {
   Settings,
   Camera,
   Upload,
+  StopCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
@@ -190,9 +191,9 @@ export default function QuizPage() {
       if (toolPart) {
         const toolName = toolPart.type.replace("tool-", "");
         if (toolName.includes("routine")) {
-          return "Generating Routine";
+          return "Generating Routine... (Normally takes 1 minutes)";
         } else if (toolName.includes("send_mail")) {
-          return "Sending Mail";
+          return "Sending Mail...";
         } else if (toolName.includes("detect_skin_type_from_questions")) {
           return "Analyzing Skin Type (Questions)";
         } else if (toolName.includes("analyze_skin_type_from_image")) {
@@ -242,7 +243,7 @@ export default function QuizPage() {
                         {isToolActive && (
                           <div className="flex items-center space-x-2 mb-2 text-foreground">
                             <Settings className="h-4 w-4 animate-spin" />
-                            <span className="text-sm font-medium">{toolName}...</span>
+                            <span className="text-sm font-medium">{toolName}</span>
                           </div>
                         )}
                         
@@ -297,6 +298,16 @@ export default function QuizPage() {
                     disabled={isLoading || isStreaming}
                     autoFocus
                   />
+                  <Button
+                    type="button"
+                    onClick={() => stop()}
+                    variant="outline"
+                    className="px-3 py-2 lg:mb-0 mb-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                    // disabled={!isStreaming}
+                    title="Stop AI"
+                  >
+                    <StopCircle className="h-4 w-4 text-blue-600" />
+                  </Button>
                   <Button
                     type="button"
                     onClick={() => setShowImageUpload(true)}

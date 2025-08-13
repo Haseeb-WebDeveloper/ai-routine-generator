@@ -38,18 +38,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (budget) {
-      try {
-        const mappedBudget = mapToPrismaBudgetRange(budget)
-        const filters = [mappedBudget]
-        if (budget === "low") {
-          filters.push(mapToPrismaBudgetRange("medium"))
-        }
-        whereClause.budget = { in: filters }
-      } catch (error) {
-        console.warn(`[API] Invalid budget "${budget}", skipping budget filter`)
-      }
-    }
+    // if (budget) {
+    //   try {
+    //     const mappedBudget = mapToPrismaBudgetRange(budget)
+    //     const filters = [mappedBudget]
+    //     if (budget === "low") {
+    //       filters.push(mapToPrismaBudgetRange("medium"))
+    //     }
+    //     whereClause.budget = { in: filters }
+    //   } catch (error) {
+    //     console.warn(`[API] Invalid budget "${budget}", skipping budget filter`)
+    //   }
+    // }
 
     if (gender) {
       try {

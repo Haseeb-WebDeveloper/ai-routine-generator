@@ -45,27 +45,27 @@ function toStringArrayOpt(value: unknown): string[] | undefined {
 
 export const planAndSendRoutine = tool({
   description:
-    "Find best-fit products for the user's profile, generate a skincare routine summary, and send it to the user's email all in one step.",
+    "Find best-fit products for the user's profile, generate a skincare routine routine, and send it to the user's email all in one step. Use this tool only after all 10 questions are answered.",
   inputSchema: z
     .object({
-      skinType: z.string().optional().describe("User's skin type"),
+      skinType: z.string().optional().describe("User's skin type. (dry, oily, combination, sensitive, normal)"),
       skinConcerns: z
         .array(z.string())
         .optional()
-        .describe("User's skin concerns in array format like [acne, aging, dark spots, dullness, sensitivity, etc.] for no skin concerns provide empty array []"),
-      budget: z.string().optional().describe("User's budget"),
-      gender: z.string().optional().describe("User's gender"),
-      age: z.string().optional().describe("User's age"),
-      allergies: z.string().optional().describe("User's allergies"),
-      climate: z.string().optional().describe("User's climate"),
+        .describe("User's skin concerns in array format like [acne, aging, dark spots, dullness, sensitivity, etc.] for no skin concerns provide empty array []."),
+      budget: z.string().optional().describe("User's budget. (low, medium, high)"),
+      gender: z.string().optional().describe("User's gender. (male, female)"),
+      age: z.string().optional().describe("User's age. (18-25, 26-35, 36-45, 46-55, 56+)"),
+      allergies: z.string().optional().describe("User's allergies. (fragrance-free, avoid retinoids, etc.)"),
+      climate: z.string().optional().describe("User's climate. (humid, dry, cold, hot)"),
       routineComplexity: z
         .string()
         .optional()
-        .describe("User's routine complexity"),
-      email: z.string().describe("User's email address to send the routine to"),
+        .describe("User's routine complexity. (minimal, standard, comprehensive)"),
+      email: z.string().describe("User's email address to send the routine to. (example@gmail.com)"),
     })
     .describe(
-      "User profile inputs and email; all profile fields are optional and tolerant of free text"
+      "User profile inputs and email. Make sure all fields are provided and valid."
     ),
 
   execute: async (profile: ToolProfile) => {
