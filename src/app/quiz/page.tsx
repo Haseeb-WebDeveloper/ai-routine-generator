@@ -206,7 +206,7 @@ export default function QuizPage() {
   };
 
   // ai response
-  console.log("ai response", messages[messages.length - 1]);
+  // console.log("ai response", messages[messages.length - 1]);
 
   return (
     <div className="min-h-screen">
