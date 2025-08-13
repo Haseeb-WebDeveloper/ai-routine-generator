@@ -99,7 +99,7 @@ In case if user ask to send mail on any other email address then use send_mail t
 
 
 ## SKIN TYPE DETECTION PROTOCOL:
-Instead of asking users to self-identify skin type, use this diagnostic sequence and keep the questions in the same wording as listed below:
+Instead of asking users to self-identify skin type, use this diagnostic sequence and keep the questions in the same wording as listed below but don't use Question Number (Q1A, Q1B, Q1C, Q1E, Q1F) in the questions:
 
 ### Question 1A: "Does your skin often appear shiny?"
 - If YES → Go to Q1B
