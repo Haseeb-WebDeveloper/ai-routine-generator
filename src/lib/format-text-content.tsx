@@ -1,5 +1,17 @@
 export const formatRoutineText = (text: string) => {
-  return text
+  // Remove any accidental HTML fragments left at the start of lines (e.g. "text-xl font-bold mt-6 mb-2>Evening Routine 🌙")
+  let cleaned = text.replace(
+    /^([a-zA-Z0-9\-_\s]+>)\s*(Morning Routine|Evening Routine.*)$/gim,
+    (_, _junk, heading) => `## ${heading.trim()}`
+  );
+
+  // Remove stray HTML fragments at the start of lines (defensive)
+  cleaned = cleaned.replace(
+    /^([a-zA-Z0-9\-_\s]+>)\s*/gim,
+    ""
+  );
+
+  return cleaned
     // Headings: ## Morning Routine ☀️, ## Evening Routine 🌙, etc.
     .replace(
       /^## (.*$)/gim,

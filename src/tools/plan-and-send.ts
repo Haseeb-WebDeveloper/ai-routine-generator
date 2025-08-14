@@ -261,8 +261,8 @@ export const planAndSendRoutine = tool({
       CURATED PRODUCT SELECTION:
       ${JSON.stringify(candidates, null, 2)}
 
-      CONSULTATION OBJECTIVE: 
-      Create a comprehensive, personalized skincare routine using ONLY the curated products above. This should feel like a premium dermatological consultation where every product choice is scientifically justified and tailored to the patient's unique profile.
+     
+      Please create a personalized skincare routine using only the products above.
 
       Key Focus Areas:
       - Address ${skinType} skin characteristics

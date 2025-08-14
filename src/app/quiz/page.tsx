@@ -17,6 +17,7 @@ import Navbar from "@/components/Navbar";
 import { RoutineWithProducts } from "@/components/ui/RoutineWithProducts";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { formatRoutineText } from "@/lib/format-text-content";
+import { getToolDisplayName } from "@/lib/get-tool-name";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -102,10 +103,18 @@ export default function QuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSentInitial, sendMessage]);
 
-  // Auto-scroll to bottom when messages update
+  // Auto-scroll to bottom only when a new user message is added
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (
+      messages.length > 0 &&
+      messages[messages.length - 1].role === "user"
+    ) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    // Only scroll for user messages, not for assistant/AI messages
+    // eslint-disable-next-line
+  }, [messages.length > 0 ? messages[messages.length - 1]?.role : null]);
+  // ^ This dependency ensures the effect runs only when the last message's role changes
 
   // Only show loading indicator when status is "submitted" (waiting for AI to start streaming)
   const isLoading = status === "submitted";
@@ -182,6 +191,22 @@ export default function QuizPage() {
     return "";
   };
 
+  // Memoized content parsing to prevent unnecessary re-renders
+  const getMessageDisplayContent = (content: string, isStreaming: boolean) => {
+    if (!content.includes('[PRODUCTS_JSON]')) {
+      return { type: 'text', content };
+    }
+    
+    // Check if content is complete (has both opening and closing markers)
+    const isComplete = content.includes('[PRODUCTS_JSON]') && content.includes('[/PRODUCTS_JSON]');
+    
+    if (isComplete) {
+      return { type: 'routine', content };
+    } else {
+      return { type: 'streaming', content };
+    }
+  };
+
   // Helper function to check if message contains active tools
   const hasActiveTool = (message: any) => {
     if (Array.isArray(message.parts)) {
@@ -192,26 +217,29 @@ export default function QuizPage() {
     return false;
   };
 
-  // Helper function to get tool name for display
-  const getToolDisplayName = (message: any) => {
-    if (Array.isArray(message.parts)) {
-      const toolPart = message.parts.find((part: any) => part.type?.startsWith("tool-"));
-      if (toolPart) {
-        const toolName = toolPart.type.replace("tool-", "");
-        if (toolName.includes("routine")) {
-          return "Generating Routine... (Normally takes 1 minutes)";
-        } else if (toolName.includes("send_mail")) {
-          return "Sending Mail...";
-        } else if (toolName.includes("detect_skin_type_from_questions")) {
-          return "Analyzing Skin Type (Questions)";
-        } else if (toolName.includes("analyze_skin_type_from_image")) {
-          return "Analyzing Skin Type (Image)";
-        }
-        return `Using ${toolName}`;
-      }
-    }
-    return "Processing";
+  // Helper function to check if a message is still streaming
+  const isMessageStreaming = (message: any) => {
+    // Check if this is the last message and it's still streaming
+    const isLastMessage = messages.indexOf(message) === messages.length - 1;
+    const content = extractMessageContent(message);
+    
+    // A message is streaming if:
+    // 1. It's the last message AND the overall chat is streaming, OR
+    // 2. It contains [PRODUCTS_JSON] but doesn't have the closing marker yet
+    return (isLastMessage && isStreaming) || 
+           (content.includes('[PRODUCTS_JSON]') && !content.includes('[/PRODUCTS_JSON]'));
   };
+
+  // Helper function to check if message content is complete for parsing
+  const isContentComplete = (content: string) => {
+    // Check if the content has both opening and closing markers
+    const hasOpeningMarker = content.includes('[PRODUCTS_JSON]');
+    const hasClosingMarker = content.includes('[/PRODUCTS_JSON]');
+    
+    // Only consider complete if we have both markers
+    return hasOpeningMarker && hasClosingMarker;
+  };
+
 
   // ai response
   console.log("ai response", messages[messages.length - 1]);
@@ -235,13 +263,23 @@ export default function QuizPage() {
                   if (shouldHideMessage) return null;
 
                   const content = extractMessageContent(message);
-                  console.log('content', content)
                   const isToolActive = hasActiveTool(message);
                   const toolName = getToolDisplayName(message);
+                  const isStreaming = isMessageStreaming(message);
+                  const displayContent = getMessageDisplayContent(content, isStreaming);
+                  
+                  // Debug logging
+                  console.log('Message content:', {
+                    hasProductsJson: content.includes('[PRODUCTS_JSON]'),
+                    hasClosingMarker: content.includes('[/PRODUCTS_JSON]'),
+                    isStreaming,
+                    displayType: displayContent.type,
+                    contentLength: content.length
+                  });
 
                   return (
                     <div
-                      key={message.id || index}
+                      key={`${message.id || index}-${displayContent.type}`}
                       className={`flex ${
                         message.role === "user" ? "justify-end" : "justify-start"
                       }`}
@@ -255,13 +293,38 @@ export default function QuizPage() {
                           </div>
                         )}
                         
-                        {/* Show message content */}
-                        {content && (
-                          content.includes('[PRODUCTS_JSON]') ? (
-                            <RoutineWithProducts content={content} />
-                          ) : (
-                            <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatRoutineText(content) }}></p>
-                          )
+                        {/* Show routine generation status */}
+                        {displayContent.type === 'streaming' && (
+                          <div className="flex items-center space-x-2 mb-2 text-blue-600 animate-pulse">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm font-medium">Building your routine...</span>
+                          </div>
+                        )}
+                        
+                        {/* Show message content - only one type at a time */}
+                        {displayContent.type === 'routine' && (
+                          // Render RoutineWithProducts when content is complete - completely replace streaming text
+                          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                            <RoutineWithProducts content={displayContent.content} />
+                          </div>
+                        )}
+                        
+                        {displayContent.type === 'streaming' && (
+                          // Show streaming text with placeholder - only while streaming
+                          <div className="space-y-2 animate-in fade-in duration-200">
+                            <div className="text-sm text-gray-500 italic mb-2 flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                              <span>Generating personalized routine...</span>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-3 border-l-4 border-blue-200">
+                              <p className="whitespace-pre-wrap text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: formatRoutineText(displayContent.content) }}></p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {displayContent.type === 'text' && (
+                          // Regular text content (not routine-related)
+                          <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatRoutineText(displayContent.content) }}></p>
                         )}
                       </div>
                     </div>
