@@ -12,51 +12,38 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2, Package, DollarSign, Star, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Product, ProductCreateData, ProductType, SkinType, SkinConcern, Gender, BudgetRange, Texture, Frequency, UseTime, Category } from '@/types/product'
+import { IProduct, BudgetRange, Gender, ProductType, AgeRange, Category, Texture } from '@/types/product'
+import { PRODUCT_TYPES, SKIN_TYPES, SKIN_CONCERNS, GENDERS, BUDGETS, TEXTURES, USE_TIMES, CATEGORIES, AGE_RANGES } from '@/constants/product'
 
-const PRODUCT_TYPES: ProductType[] = [
-  "cleanser", "moisturizer", "sunscreen", "toner", "essence", "serum", 
-  "exfoliant (chemical)", "retinol", "eye cream", "face mask"
-]
 
-const SKIN_TYPES: SkinType[] = ["dry", "oily", "combination", "sensitive", "normal"]
-const SKIN_CONCERNS: SkinConcern[] = ["acne", "blackheads", "dullness", "hyperpigmentation", "fine lines", "dehydration", "redness", "pores", "uneven texture"]
-const GENDERS: Gender[] = ["male", "female", "unisex"]
-const BUDGETS: BudgetRange[] = ["low", "medium", "high"]
-const TEXTURES: Texture[] = ["gel", "cream", "lotion", "foam", "oil", "spray"]
-const FREQUENCIES: Frequency[] = ["daily", "2-3x/week", "as needed"]
-const USE_TIMES: UseTime[] = ["morning", "afternoon", "evening", "night"]
-const CATEGORIES: Category[] = ["core", "treatment", "hydration", "special", "optional"]
+interface Product extends IProduct {
+  id: string
+  created_at?: string
+  updated_at?: string
+}
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [formData, setFormData] = useState<ProductCreateData>({
+  const [formData, setFormData] = useState<IProduct>({
     name: '',
     brand: '',
     type: 'cleanser',
     gender: 'unisex',
-    age: 18,
-    budget: 'medium',
+    age: '18-25',
+    budget: 'midRange',
     category: 'core',
     use_time: [],
-    frequency: 'daily',
     skin_types: [],
     skin_concerns: [],
     ingredients: [],
-    avoid_with: [],
     texture: 'cream',
-    comedogenic: false,
     fragrance_free: true,
     alcohol_free: true,
-    cruelty_free: true,
-    vegan: false,
     instructions: '',
-    benefits: [],
-    warnings: [],
-    price_usd: 0,
+    price: 0,
     purchase_link: '',
     image_url: ''
   })
@@ -127,21 +114,14 @@ export default function Products() {
       budget: product.budget,
       category: product.category,
       use_time: product.use_time,
-      frequency: product.frequency,
       skin_types: product.skin_types,
       skin_concerns: product.skin_concerns,
       ingredients: product.ingredients,
-      avoid_with: product.avoid_with,
       texture: product.texture,
-      comedogenic: product.comedogenic,
       fragrance_free: product.fragrance_free,
       alcohol_free: product.alcohol_free,
-      cruelty_free: product.cruelty_free,
-      vegan: product.vegan,
       instructions: product.instructions,
-      benefits: product.benefits,
-      warnings: product.warnings || [],
-      price_usd: product.price_usd,
+      price: product.price,
       purchase_link: product.purchase_link,
       image_url: product.image_url
     })
@@ -173,32 +153,25 @@ export default function Products() {
       brand: '',
       type: 'cleanser',
       gender: 'unisex',
-      age: 18,
-      budget: 'medium',
+      age: '18-25',
+      budget: 'midRange',
       category: 'core',
       use_time: [],
-      frequency: 'daily',
       skin_types: [],
       skin_concerns: [],
       ingredients: [],
-      avoid_with: [],
       texture: 'cream',
-      comedogenic: false,
       fragrance_free: true,
       alcohol_free: true,
-      cruelty_free: true,
-      vegan: false,
       instructions: '',
-      benefits: [],
-      warnings: [],
-      price_usd: 0,
+      price: 0,
       purchase_link: '',
       image_url: ''
     })
     setEditingProduct(null)
   }
 
-  const handleArrayChange = (field: keyof ProductCreateData, value: string, checked: boolean) => {
+  const handleArrayChange = (field: keyof IProduct, value: string, checked: boolean) => {
     const currentArray = formData[field] as string[]
     if (checked) {
       setFormData({
@@ -213,19 +186,11 @@ export default function Products() {
     }
   }
 
-  const handleBenefitsChange = (value: string) => {
-    const benefits = value.split('\n').filter(benefit => benefit.trim())
-    setFormData({
-      ...formData,
-      benefits
-    })
-  }
-
   const getBudgetColor = (budget: BudgetRange) => {
     const colors = {
-      low: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-red-100 text-red-800'
+      budgetFriendly: 'bg-green-100 text-green-800',
+      midRange: 'bg-yellow-100 text-yellow-800',
+      Premium: 'bg-red-100 text-red-800'
     }
     return colors[budget]
   }
@@ -333,14 +298,21 @@ export default function Products() {
 
                 <div className="space-y-2">
                   <Label htmlFor="age">Age Range</Label>
-                  <Input
-                    id="age"
-                    type="number"
+                  <Select
                     value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                    min="13"
-                    max="100"
-                  />
+                    onValueChange={(value: AgeRange) => setFormData({ ...formData, age: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGE_RANGES.map((age) => (
+                        <SelectItem key={age} value={age}>
+                          {age}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -402,18 +374,18 @@ export default function Products() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
+                  <Label htmlFor="texture">Texture</Label>
                   <Select
-                    value={formData.frequency}
-                    onValueChange={(value: Frequency) => setFormData({ ...formData, frequency: value })}
+                    value={formData.texture}
+                    onValueChange={(value: Texture) => setFormData({ ...formData, texture: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {FREQUENCIES.map((frequency) => (
-                        <SelectItem key={frequency} value={frequency}>
-                          {frequency}
+                      {TEXTURES.map((texture) => (
+                        <SelectItem key={texture} value={texture}>
+                          {texture}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -424,7 +396,7 @@ export default function Products() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Skin Types</Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                     {SKIN_TYPES.map((type) => (
                       <div key={type} className="flex items-center space-x-2">
                         <Checkbox
@@ -461,35 +433,8 @@ export default function Products() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="texture">Texture</Label>
-                  <Select
-                    value={formData.texture}
-                    onValueChange={(value: Texture) => setFormData({ ...formData, texture: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TEXTURES.map((texture) => (
-                        <SelectItem key={texture} value={texture}>
-                          {texture}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Product Properties</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="comedogenic"
-                        checked={formData.comedogenic}
-                        onCheckedChange={(checked) => setFormData({ ...formData, comedogenic: checked as boolean })}
-                      />
-                      <Label htmlFor="comedogenic" className="text-sm">Comedogenic</Label>
-                    </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="fragrance_free"
@@ -506,39 +451,23 @@ export default function Products() {
                       />
                       <Label htmlFor="alcohol_free" className="text-sm">Alcohol Free</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="cruelty_free"
-                        checked={formData.cruelty_free}
-                        onCheckedChange={(checked) => setFormData({ ...formData, cruelty_free: checked as boolean })}
-                      />
-                      <Label htmlFor="cruelty_free" className="text-sm">Cruelty Free</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="vegan"
-                        checked={formData.vegan}
-                        onCheckedChange={(checked) => setFormData({ ...formData, vegan: checked as boolean })}
-                      />
-                      <Label htmlFor="vegan" className="text-sm">Vegan</Label>
-                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (USD)</Label>
                   <Input
                     id="price"
                     type="number"
                     step="0.01"
-                    value={formData.price_usd}
-                    onChange={(e) => setFormData({ ...formData, price_usd: parseFloat(e.target.value) })}
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                     placeholder="0.00"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="image_url">Image URL</Label>
                   <Input
@@ -548,16 +477,16 @@ export default function Products() {
                     placeholder="https://example.com/image.jpg"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="purchase_link">Purchase Link</Label>
-                <Input
-                  id="purchase_link"
-                  value={formData.purchase_link}
-                  onChange={(e) => setFormData({ ...formData, purchase_link: e.target.value })}
-                  placeholder="https://example.com/product"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="purchase_link">Purchase Link</Label>
+                  <Input
+                    id="purchase_link"
+                    value={formData.purchase_link}
+                    onChange={(e) => setFormData({ ...formData, purchase_link: e.target.value })}
+                    placeholder="https://example.com/product"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -569,17 +498,6 @@ export default function Products() {
                   placeholder="How to use this product..."
                   rows={3}
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="benefits">Benefits (one per line)</Label>
-                <Textarea
-                  id="benefits"
-                  value={formData.benefits.join('\n')}
-                  onChange={(e) => handleBenefitsChange(e.target.value)}
-                  placeholder="Hydrates skin&#10;Reduces fine lines&#10;Brightens complexion"
-                  rows={3}
                 />
               </div>
 
@@ -614,7 +532,7 @@ export default function Products() {
                 </div>
                 <div className="flex flex-col items-end space-y-2 min-w-[90px]">
                   <Badge className={getBudgetColor(product.budget) + " px-2 py-1 text-sm"}>
-                    ${product.price_usd}
+                    ${product.price}
                   </Badge>
                   <div className="flex space-x-1">
                     <Button
@@ -655,7 +573,7 @@ export default function Products() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-gray-400" />
-                  <span className="text-xs text-gray-700">{product.rating || 'No rating'}</span>
+                  <span className="text-xs text-gray-700">{product.age}</span>
                 </div>
               </div>
               <div className="mb-2">
@@ -673,15 +591,14 @@ export default function Products() {
                 </div>
               </div>
               <div className="mt-2">
-                <span className="block text-xs text-gray-500 font-medium mb-1">Benefits:</span>
-                <ul className="list-disc list-inside text-xs text-gray-700 space-y-0.5">
-                  {product.benefits && product.benefits.slice(0, 3).map((benefit, idx) => (
-                    <li key={idx}>{benefit}</li>
+                <span className="block text-xs text-gray-500 font-medium mb-1">Use Time:</span>
+                <div className="flex flex-wrap gap-1">
+                  {product.use_time.map((time) => (
+                    <Badge key={time} variant="outline" className="text-xs px-2 py-0.5">
+                      {time}
+                    </Badge>
                   ))}
-                  {product.benefits && product.benefits.length > 3 && (
-                    <li className="text-gray-400">+{product.benefits.length - 3} more</li>
-                  )}
-                </ul>
+                </div>
               </div>
               {product.purchase_link && (
                 <div className="mt-3">

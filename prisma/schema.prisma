@@ -93,111 +93,87 @@ enum CampaignStatus {
   cancelled
 }
 
-// Product database for skincare recommendations
+// Product database for skincare recommendations - Updated to match new interface
 model Product {
   id              String        @id @default(cuid())
   name            String
   brand           String
   type            ProductType
   gender          Gender
-  age             Int
+  age             AgeRange
   budget          BudgetRange
   category        Category
   useTime         UseTime[]     @map("use_time")
-  frequency       Frequency
   skinTypes       SkinType[]    @map("skin_types")
   skinConcerns    SkinConcern[] @map("skin_concerns")
   ingredients     Json // Array of Ingredient objects
-  avoidWith       Json // Array of Ingredient objects
   texture         Texture
-  comedogenic     Boolean
   fragranceFree   Boolean       @map("fragrance_free")
   alcoholFree     Boolean       @map("alcohol_free")
-  crueltyFree     Boolean       @map("cruelty_free")
-  vegan           Boolean
   instructions    String
-  benefits        String[]
-  warnings        String[]
-  priceUsd        Decimal       @map("price_usd") // Change from Float to Decimal
+  price           Decimal       @map("price")
   purchaseLink    String        @map("purchase_link")
   imageUrl        String        @map("image_url")
-  popularityScore Int?          @map("popularity_score") // Change from Float to Int
-  rating          Decimal? // Change from Float to Decimal
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   @@map("products")
 }
 
-// Product type enums
+// Product type enums - Updated to match new interface
 enum ProductType {
-  // Core
   CLEANSER
   MOISTURIZER
   SUNSCREEN
-
-  // Prep & Hydration
   TONER
   ESSENCE
-  HYDRATING_MIST
-  FACE_MIST
-
-  // Treatment-Focused
+  HYDRATOR
   SERUM
   AMPOULE
   SPOT_TREATMENT
-  EXFOLIANT_CHEMICAL
-  EXFOLIATOR_PHYSICAL
+  EXFOLIANT
   RETINOID
-  RETINOL
-  PEPTIDE_TREATMENT
-  VITAMIN_C_TREATMENT
-  NIACINAMIDE_TREATMENT
-  BRIGHTENING_TREATMENT
-  ANTI_AGING_TREATMENT
-
-  // Night Care / Repair
+  PEPTIDE
+  VITAMIN_C
+  NIACINAMIDE
+  BRIGHTENING
+  ANTI_AGING
   SLEEPING_MASK
   NIGHT_CREAM
-  OVERNIGHT_TREATMENT
   FACE_OIL
-
-  // Targeted Areas
   EYE_CREAM
   EYE_SERUM
   LIP_BALM
-  LIP_TREATMENT
-
-  // Cleansing Extras
+  LIP_CARE
   MAKEUP_REMOVER
   CLEANSING_BALM
   MICELLAR_WATER
   OIL_CLEANSER
-
-  // Occasional Treatments
   FACE_MASK
   SHEET_MASK
   CLAY_MASK
-  PEEL_OFF_MASK
+  PEEL_MASK
   SCRUB_MASK
   HYDRATING_MASK
   DETOX_MASK
-
-  // Special Purpose
-  BARRIER_REPAIR_CREAM
+  BARRIER_CREAM
   CICA_CREAM
   SOOTHING_CREAM
-  ANTI_REDNESS_CREAM
+  ANTI_REDNESS
   PORE_MINIMIZER
-  SEBUM_CONTROL_GEL
+  SEBUM_CONTROL
 }
 
 enum SkinType {
-  DRY
   OILY
   COMBINATION
-  SENSITIVE
+  DRY
   NORMAL
+  SENSITIVE
+  ASPHYXIATED
+  DEHYDRATED
+  MATURE
+  ACNE_PRONE
 }
 
 enum SkinConcern {
@@ -206,10 +182,18 @@ enum SkinConcern {
   DULLNESS
   HYPERPIGMENTATION
   FINE_LINES
+  WRINKLES
   DEHYDRATION
+  DRYNESS
   REDNESS
+  SENSITIVITY
   PORES
+  OILINESS
   UNEVEN_TEXTURE
+  DARK_CIRCLES
+  PUFFINESS
+  SCARRING
+  SUN_DAMAGE
 }
 
 enum Gender {
@@ -219,9 +203,9 @@ enum Gender {
 }
 
 enum BudgetRange {
-  LOW
-  MEDIUM
-  HIGH
+  BUDGET_FRIENDLY
+  MID_RANGE
+  PREMIUM
 }
 
 enum Texture {
@@ -231,18 +215,12 @@ enum Texture {
   FOAM
   OIL
   SPRAY
-}
-
-enum Frequency {
-  DAILY
-  TWO_THREE_TIMES_WEEK
-  AS_NEEDED
+  MASK
+  BALM
 }
 
 enum UseTime {
   MORNING
-  AFTERNOON
-  EVENING
   NIGHT
 }
 
@@ -252,4 +230,16 @@ enum Category {
   HYDRATION
   SPECIAL
   OPTIONAL
+}
+
+enum AgeRange {
+  AGE_0_1
+  AGE_1_3
+  AGE_4_12
+  AGE_13_17
+  AGE_18_25
+  AGE_26_35
+  AGE_36_45
+  AGE_46_60
+  AGE_60_PLUS
 }

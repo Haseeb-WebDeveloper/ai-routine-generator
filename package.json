@@ -7,8 +7,14 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "create-prisma-admin": "bun scripts/create-prisma-admin.js",
-    "add-sample-products": "node scripts/add-sample-products.js"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push",
+    "prisma:pull": "prisma db pull",
+    "create-admin": "bun scripts/create-admin.js",
+    "add-email-templates": "bun scripts/add-default-email-templates.js",
+    "add-sample-products": "bun scripts/add-sample-products.js"
   },
   "dependencies": {
     "@ai-sdk/cohere": "^2.0.1",

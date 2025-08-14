@@ -1,68 +1,59 @@
 // This file contains TypeScript types that exactly match Prisma's enum values
 // These types ensure full type safety when working with Prisma
+// Updated to match the new clean product interface
 
 export type PrismaProductType =
-  // Core
   | "CLEANSER"
   | "MOISTURIZER"
   | "SUNSCREEN"
-
-  // Prep & Hydration
   | "TONER"
   | "ESSENCE"
-  | "HYDRATING_MIST"
-  | "FACE_MIST"
-
-  // Treatment-Focused
+  | "HYDRATOR"
   | "SERUM"
   | "AMPOULE"
   | "SPOT_TREATMENT"
-  | "EXFOLIANT_CHEMICAL"
-  | "EXFOLIATOR_PHYSICAL"
+  | "EXFOLIANT"
   | "RETINOID"
-  | "RETINOL"
-  | "PEPTIDE_TREATMENT"
-  | "VITAMIN_C_TREATMENT"
-  | "NIACINAMIDE_TREATMENT"
-  | "BRIGHTENING_TREATMENT"
-  | "ANTI_AGING_TREATMENT"
-
-  // Night Care / Repair
+  | "PEPTIDE"
+  | "VITAMIN_C"
+  | "NIACINAMIDE"
+  | "BRIGHTENING"
+  | "ANTI_AGING"
   | "SLEEPING_MASK"
   | "NIGHT_CREAM"
-  | "OVERNIGHT_TREATMENT"
   | "FACE_OIL"
-
-  // Targeted Areas
   | "EYE_CREAM"
   | "EYE_SERUM"
   | "LIP_BALM"
-  | "LIP_TREATMENT"
-
-  // Cleansing Extras
+  | "LIP_CARE"
   | "MAKEUP_REMOVER"
   | "CLEANSING_BALM"
   | "MICELLAR_WATER"
   | "OIL_CLEANSER"
-
-  // Occasional Treatments
   | "FACE_MASK"
   | "SHEET_MASK"
   | "CLAY_MASK"
-  | "PEEL_OFF_MASK"
+  | "PEEL_MASK"
   | "SCRUB_MASK"
   | "HYDRATING_MASK"
   | "DETOX_MASK"
-
-  // Special Purpose
-  | "BARRIER_REPAIR_CREAM"
+  | "BARRIER_CREAM"
   | "CICA_CREAM"
   | "SOOTHING_CREAM"
-  | "ANTI_REDNESS_CREAM"
+  | "ANTI_REDNESS"
   | "PORE_MINIMIZER"
-  | "SEBUM_CONTROL_GEL"
+  | "SEBUM_CONTROL"
 
-export type PrismaSkinType = "DRY" | "OILY" | "COMBINATION" | "SENSITIVE" | "NORMAL"
+export type PrismaSkinType = 
+  | "OILY"
+  | "COMBINATION"
+  | "DRY"
+  | "NORMAL"
+  | "SENSITIVE"
+  | "ASPHYXIATED"
+  | "DEHYDRATED"
+  | "MATURE"
+  | "ACNE_PRONE"
 
 export type PrismaSkinConcern =
   | "ACNE"
@@ -70,22 +61,39 @@ export type PrismaSkinConcern =
   | "DULLNESS"
   | "HYPERPIGMENTATION"
   | "FINE_LINES"
+  | "WRINKLES"
   | "DEHYDRATION"
+  | "DRYNESS"
   | "REDNESS"
+  | "SENSITIVITY"
   | "PORES"
+  | "OILINESS"
   | "UNEVEN_TEXTURE"
+  | "DARK_CIRCLES"
+  | "PUFFINESS"
+  | "SCARRING"
+  | "SUN_DAMAGE"
 
 export type PrismaGender = "MALE" | "FEMALE" | "UNISEX"
 
-export type PrismaBudgetRange = "LOW" | "MEDIUM" | "HIGH"
+export type PrismaBudgetRange = "BUDGET_FRIENDLY" | "MID_RANGE" | "PREMIUM"
 
-export type PrismaTexture = "GEL" | "CREAM" | "LOTION" | "FOAM" | "OIL" | "SPRAY"
+export type PrismaTexture = "GEL" | "CREAM" | "LOTION" | "FOAM" | "OIL" | "SPRAY" | "MASK" | "BALM"
 
-export type PrismaFrequency = "DAILY" | "TWO_THREE_TIMES_WEEK" | "AS_NEEDED"
-
-export type PrismaUseTime = "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT"
+export type PrismaUseTime = "MORNING" | "NIGHT"
 
 export type PrismaCategory = "CORE" | "TREATMENT" | "HYDRATION" | "SPECIAL" | "OPTIONAL"
+
+export type PrismaAgeRange = 
+  | "AGE_0_1"
+  | "AGE_1_3"
+  | "AGE_4_12"
+  | "AGE_13_17"
+  | "AGE_18_25"
+  | "AGE_26_35"
+  | "AGE_36_45"
+  | "AGE_46_60"
+  | "AGE_60_PLUS"
 
 // Mapping functions for converting frontend types to Prisma types
 export const mapToPrismaProductType = (type: string): PrismaProductType => {
@@ -95,48 +103,44 @@ export const mapToPrismaProductType = (type: string): PrismaProductType => {
     'sunscreen': 'SUNSCREEN',
     'toner': 'TONER',
     'essence': 'ESSENCE',
-    'hydrating mist': 'HYDRATING_MIST',
-    'face mist': 'FACE_MIST',
+    'hydrator': 'HYDRATOR',
     'serum': 'SERUM',
     'ampoule': 'AMPOULE',
-    'spot treatment': 'SPOT_TREATMENT',
-    'exfoliant (chemical)': 'EXFOLIANT_CHEMICAL',
-    'exfoliator (physical)': 'EXFOLIATOR_PHYSICAL',
+    'spotTreatment': 'SPOT_TREATMENT',
+    'exfoliant': 'EXFOLIANT',
     'retinoid': 'RETINOID',
-    'retinol': 'RETINOL',
-    'peptide treatment': 'PEPTIDE_TREATMENT',
-    'vitamin c treatment': 'VITAMIN_C_TREATMENT',
-    'niacinamide treatment': 'NIACINAMIDE_TREATMENT',
-    'brightening treatment': 'BRIGHTENING_TREATMENT',
-    'anti-aging treatment': 'ANTI_AGING_TREATMENT',
-    'sleeping mask': 'SLEEPING_MASK',
-    'night cream': 'NIGHT_CREAM',
-    'overnight treatment': 'OVERNIGHT_TREATMENT',
-    'face oil': 'FACE_OIL',
-    'eye cream': 'EYE_CREAM',
-    'eye serum': 'EYE_SERUM',
-    'lip balm': 'LIP_BALM',
-    'lip treatment': 'LIP_TREATMENT',
-    'makeup remover': 'MAKEUP_REMOVER',
-    'cleansing balm': 'CLEANSING_BALM',
-    'micellar water': 'MICELLAR_WATER',
-    'oil cleanser': 'OIL_CLEANSER',
-    'face mask': 'FACE_MASK',
-    'sheet mask': 'SHEET_MASK',
-    'clay mask': 'CLAY_MASK',
-    'peel-off mask': 'PEEL_OFF_MASK',
-    'scrub mask': 'SCRUB_MASK',
-    'hydrating mask': 'HYDRATING_MASK',
-    'detox mask': 'DETOX_MASK',
-    'barrier repair cream': 'BARRIER_REPAIR_CREAM',
-    'cica cream': 'CICA_CREAM',
-    'soothing cream': 'SOOTHING_CREAM',
-    'anti-redness cream': 'ANTI_REDNESS_CREAM',
-    'pore minimizer': 'PORE_MINIMIZER',
-    'sebum control gel': 'SEBUM_CONTROL_GEL'
+    'peptide': 'PEPTIDE',
+    'vitaminC': 'VITAMIN_C',
+    'niacinamide': 'NIACINAMIDE',
+    'brightening': 'BRIGHTENING',
+    'antiAging': 'ANTI_AGING',
+    'sleepingMask': 'SLEEPING_MASK',
+    'nightCream': 'NIGHT_CREAM',
+    'faceOil': 'FACE_OIL',
+    'eyeCream': 'EYE_CREAM',
+    'eyeSerum': 'EYE_SERUM',
+    'lipBalm': 'LIP_BALM',
+    'lipCare': 'LIP_CARE',
+    'makeupRemover': 'MAKEUP_REMOVER',
+    'cleansingBalm': 'CLEANSING_BALM',
+    'micellarWater': 'MICELLAR_WATER',
+    'oilCleanser': 'OIL_CLEANSER',
+    'faceMask': 'FACE_MASK',
+    'sheetMask': 'SHEET_MASK',
+    'clayMask': 'CLAY_MASK',
+    'peelMask': 'PEEL_MASK',
+    'scrubMask': 'SCRUB_MASK',
+    'hydratingMask': 'HYDRATING_MASK',
+    'detoxMask': 'DETOX_MASK',
+    'barrierCream': 'BARRIER_CREAM',
+    'cicaCream': 'CICA_CREAM',
+    'soothingCream': 'SOOTHING_CREAM',
+    'antiRedness': 'ANTI_REDNESS',
+    'poreMinimizer': 'PORE_MINIMIZER',
+    'sebumControl': 'SEBUM_CONTROL'
   }
   
-  const mapped = typeMap[type.toLowerCase()]
+  const mapped = typeMap[type]
   if (!mapped) {
     throw new Error(`Invalid product type: ${type}. Valid types: ${Object.keys(typeMap).join(', ')}`)
   }
@@ -159,12 +163,12 @@ export const mapToPrismaGender = (gender: string): PrismaGender => {
 
 export const mapToPrismaBudgetRange = (budget: string): PrismaBudgetRange => {
   const budgetMap: Record<string, PrismaBudgetRange> = {
-    'low': 'LOW',
-    'medium': 'MEDIUM',
-    'high': 'HIGH'
+    'budgetFriendly': 'BUDGET_FRIENDLY',
+    'midRange': 'MID_RANGE',
+    'Premium': 'PREMIUM'
   }
   
-  const mapped = budgetMap[budget.toLowerCase()]
+  const mapped = budgetMap[budget]
   if (!mapped) {
     throw new Error(`Invalid budget: ${budget}. Valid budgets: ${Object.keys(budgetMap).join(', ')}`)
   }
@@ -190,8 +194,6 @@ export const mapToPrismaCategory = (category: string): PrismaCategory => {
 export const mapToPrismaUseTime = (useTime: string[]): PrismaUseTime[] => {
   const useTimeMap: Record<string, PrismaUseTime> = {
     'morning': 'MORNING',
-    'afternoon': 'AFTERNOON',
-    'evening': 'EVENING',
     'night': 'NIGHT'
   }
   
@@ -204,27 +206,17 @@ export const mapToPrismaUseTime = (useTime: string[]): PrismaUseTime[] => {
   })
 }
 
-export const mapToPrismaFrequency = (frequency: string): PrismaFrequency => {
-  const frequencyMap: Record<string, PrismaFrequency> = {
-    'daily': 'DAILY',
-    '2-3x/week': 'TWO_THREE_TIMES_WEEK',
-    'as needed': 'AS_NEEDED'
-  }
-  
-  const mapped = frequencyMap[frequency.toLowerCase()]
-  if (!mapped) {
-    throw new Error(`Invalid frequency: ${frequency}. Valid frequencies: ${Object.keys(frequencyMap).join(', ')}`)
-  }
-  return mapped
-}
-
 export const mapToPrismaSkinTypes = (skinTypes: string[]): PrismaSkinType[] => {
   const skinTypeMap: Record<string, PrismaSkinType> = {
-    'dry': 'DRY',
     'oily': 'OILY',
     'combination': 'COMBINATION',
+    'dry': 'DRY',
+    'normal': 'NORMAL',
     'sensitive': 'SENSITIVE',
-    'normal': 'NORMAL'
+    'asphyxiated': 'ASPHYXIATED',
+    'dehydrated': 'DEHYDRATED',
+    'mature': 'MATURE',
+    'acne_prone': 'ACNE_PRONE'
   }
   
   return skinTypes.map(t => {
@@ -242,12 +234,19 @@ export const mapToPrismaSkinConcerns = (skinConcerns: string[]): PrismaSkinConce
     'blackheads': 'BLACKHEADS',
     'dullness': 'DULLNESS',
     'hyperpigmentation': 'HYPERPIGMENTATION',
-    'fine lines': 'FINE_LINES',
+    'fine_lines': 'FINE_LINES',
+    'wrinkles': 'WRINKLES',
     'dehydration': 'DEHYDRATION',
+    'dryness': 'DRYNESS',
     'redness': 'REDNESS',
+    'sensitivity': 'SENSITIVITY',
     'pores': 'PORES',
-    'uneven texture': 'UNEVEN_TEXTURE',
-    'sun damage': 'HYPERPIGMENTATION' // Map 'sun damage' to closest concern
+    'oiliness': 'OILINESS',
+    'uneven_texture': 'UNEVEN_TEXTURE',
+    'dark_circles': 'DARK_CIRCLES',
+    'puffiness': 'PUFFINESS',
+    'scarring': 'SCARRING',
+    'sun_damage': 'SUN_DAMAGE'
   }
   
   return skinConcerns.map(c => {
@@ -267,7 +266,8 @@ export const mapToPrismaTexture = (texture: string): PrismaTexture => {
     'foam': 'FOAM',
     'oil': 'OIL',
     'spray': 'SPRAY',
-    'serum': 'GEL' // Map 'serum' to 'GEL' as closest texture
+    'mask': 'MASK',
+    'balm': 'BALM'
   }
   
   const mapped = textureMap[texture.toLowerCase()]
@@ -275,4 +275,18 @@ export const mapToPrismaTexture = (texture: string): PrismaTexture => {
     throw new Error(`Invalid texture: ${texture}. Valid textures: ${Object.keys(textureMap).join(', ')}`)
   }
   return mapped
+}
+
+export const mapToPrismaAgeRange = (age: number): PrismaAgeRange => {
+  if (age >= 0 && age <= 1) return 'AGE_0_1'
+  if (age >= 1 && age <= 3) return 'AGE_1_3'
+  if (age >= 4 && age <= 12) return 'AGE_4_12'
+  if (age >= 13 && age <= 17) return 'AGE_13_17'
+  if (age >= 18 && age <= 25) return 'AGE_18_25'
+  if (age >= 26 && age <= 35) return 'AGE_26_35'
+  if (age >= 36 && age <= 45) return 'AGE_36_45'
+  if (age >= 46 && age <= 60) return 'AGE_46_60'
+  if (age >= 60) return 'AGE_60_PLUS'
+  
+  throw new Error(`Invalid age: ${age}. Age must be a positive number.`)
 }

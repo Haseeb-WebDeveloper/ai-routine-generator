@@ -59,6 +59,7 @@ export function RoutineWithProducts({
           <div
             className="routine-prose max-w-none"
             dangerouslySetInnerHTML={{ __html: formatRoutineText(routineText) }}
+            // dangerouslySetInnerHTML={{ __html: routineText }}
           />
         </div>
       </div>

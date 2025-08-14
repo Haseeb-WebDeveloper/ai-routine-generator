@@ -11,48 +11,44 @@ const mapProductType = (type) => {
     'sunscreen': 'SUNSCREEN',
     'toner': 'TONER',
     'essence': 'ESSENCE',
-    'hydrating mist': 'HYDRATING_MIST',
-    'face mist': 'FACE_MIST',
+    'hydrator': 'HYDRATOR',
     'serum': 'SERUM',
     'ampoule': 'AMPOULE',
-    'spot treatment': 'SPOT_TREATMENT',
-    'exfoliant (chemical)': 'EXFOLIANT_CHEMICAL',
-    'exfoliator (physical)': 'EXFOLIATOR_PHYSICAL',
+    'spotTreatment': 'SPOT_TREATMENT',
+    'exfoliant': 'EXFOLIANT',
     'retinoid': 'RETINOID',
-    'retinol': 'RETINOL',
-    'peptide treatment': 'PEPTIDE_TREATMENT',
-    'vitamin c treatment': 'VITAMIN_C_TREATMENT',
-    'niacinamide treatment': 'NIACINAMIDE_TREATMENT',
-    'brightening treatment': 'BRIGHTENING_TREATMENT',
-    'anti-aging treatment': 'ANTI_AGING_TREATMENT',
-    'sleeping mask': 'SLEEPING_MASK',
-    'night cream': 'NIGHT_CREAM',
-    'overnight treatment': 'OVERNIGHT_TREATMENT',
-    'face oil': 'FACE_OIL',
-    'eye cream': 'EYE_CREAM',
-    'eye serum': 'EYE_SERUM',
-    'lip balm': 'LIP_BALM',
-    'lip treatment': 'LIP_TREATMENT',
-    'makeup remover': 'MAKEUP_REMOVER',
-    'cleansing balm': 'CLEANSING_BALM',
-    'micellar water': 'MICELLAR_WATER',
-    'oil cleanser': 'OIL_CLEANSER',
-    'face mask': 'FACE_MASK',
-    'sheet mask': 'SHEET_MASK',
-    'clay mask': 'CLAY_MASK',
-    'peel-off mask': 'PEEL_OFF_MASK',
-    'scrub mask': 'SCRUB_MASK',
-    'hydrating mask': 'HYDRATING_MASK',
-    'detox mask': 'DETOX_MASK',
-    'barrier repair cream': 'BARRIER_REPAIR_CREAM',
-    'cica cream': 'CICA_CREAM',
-    'soothing cream': 'SOOTHING_CREAM',
-    'anti-redness cream': 'ANTI_REDNESS_CREAM',
-    'pore minimizer': 'PORE_MINIMIZER',
-    'sebum control gel': 'SEBUM_CONTROL_GEL'
+    'peptide': 'PEPTIDE',
+    'vitaminC': 'VITAMIN_C',
+    'niacinamide': 'NIACINAMIDE',
+    'brightening': 'BRIGHTENING',
+    'antiAging': 'ANTI_AGING',
+    'sleepingMask': 'SLEEPING_MASK',
+    'nightCream': 'NIGHT_CREAM',
+    'faceOil': 'FACE_OIL',
+    'eyeCream': 'EYE_CREAM',
+    'eyeSerum': 'EYE_SERUM',
+    'lipBalm': 'LIP_BALM',
+    'lipCare': 'LIP_CARE',
+    'makeupRemover': 'MAKEUP_REMOVER',
+    'cleansingBalm': 'CLEANSING_BALM',
+    'micellarWater': 'MICELLAR_WATER',
+    'oilCleanser': 'OIL_CLEANSER',
+    'faceMask': 'FACE_MASK',
+    'sheetMask': 'SHEET_MASK',
+    'clayMask': 'CLAY_MASK',
+    'peelMask': 'PEEL_MASK',
+    'scrubMask': 'SCRUB_MASK',
+    'hydratingMask': 'HYDRATING_MASK',
+    'detoxMask': 'DETOX_MASK',
+    'barrierCream': 'BARRIER_CREAM',
+    'cicaCream': 'CICA_CREAM',
+    'soothingCream': 'SOOTHING_CREAM',
+    'antiRedness': 'ANTI_REDNESS',
+    'poreMinimizer': 'PORE_MINIMIZER',
+    'sebumControl': 'SEBUM_CONTROL'
   }
   
-  const mapped = typeMap[type.toLowerCase()]
+  const mapped = typeMap[type]
   if (!mapped) {
     throw new Error(`Invalid product type: ${type}. Valid types: ${Object.keys(typeMap).join(', ')}`)
   }
@@ -75,12 +71,12 @@ const mapGender = (gender) => {
 
 const mapBudgetRange = (budget) => {
   const budgetMap = {
-    'low': 'LOW',
-    'medium': 'MEDIUM',
-    'high': 'HIGH'
+    'budgetFriendly': 'BUDGET_FRIENDLY',
+    'midRange': 'MID_RANGE',
+    'Premium': 'PREMIUM'
   }
   
-  const mapped = budgetMap[budget.toLowerCase()]
+  const mapped = budgetMap[budget]
   if (!mapped) {
     throw new Error(`Invalid budget: ${budget}. Valid budgets: ${Object.keys(budgetMap).join(', ')}`)
   }
@@ -106,8 +102,6 @@ const mapCategory = (category) => {
 const mapUseTime = (useTime) => {
   const useTimeMap = {
     'morning': 'MORNING',
-    'afternoon': 'AFTERNOON',
-    'evening': 'EVENING',
     'night': 'NIGHT'
   }
   
@@ -120,28 +114,17 @@ const mapUseTime = (useTime) => {
   })
 }
 
-const mapFrequency = (frequency) => {
-  const frequencyMap = {
-    'daily': 'DAILY',
-    '2-3x/week': 'TWO_THREE_TIMES_WEEK',
-    'as needed': 'AS_NEEDED'
-  }
-  
-  const mapped = frequencyMap[frequency.toLowerCase()]
-  if (!mapped) {
-    throw new Error(`Invalid frequency: ${frequency}. Valid frequencies: ${Object.keys(frequencyMap).join(', ')}`)
-  }
-  return mapped
-}
-
 const mapSkinTypes = (skinTypes) => {
   const skinTypeMap = {
-    'dry': 'DRY',
     'oily': 'OILY',
     'combination': 'COMBINATION',
-    'sensitive': 'SENSITIVE',
+    'dry': 'DRY',
     'normal': 'NORMAL',
-    'all': 'DRY' // Map 'all' to 'DRY' as a default, or you could use multiple types
+    'sensitive': 'SENSITIVE',
+    'asphyxiated': 'ASPHYXIATED',
+    'dehydrated': 'DEHYDRATED',
+    'mature': 'MATURE',
+    'acne_prone': 'ACNE_PRONE'
   }
   
   return skinTypes.map(t => {
@@ -159,12 +142,19 @@ const mapSkinConcerns = (skinConcerns) => {
     'blackheads': 'BLACKHEADS',
     'dullness': 'DULLNESS',
     'hyperpigmentation': 'HYPERPIGMENTATION',
-    'fine lines': 'FINE_LINES',
+    'fine_lines': 'FINE_LINES',
+    'wrinkles': 'WRINKLES',
     'dehydration': 'DEHYDRATION',
+    'dryness': 'DRYNESS',
     'redness': 'REDNESS',
+    'sensitivity': 'SENSITIVITY',
     'pores': 'PORES',
-    'uneven texture': 'UNEVEN_TEXTURE',
-    'sun damage': 'HYPERPIGMENTATION' // Map 'sun damage' to closest concern
+    'oiliness': 'OILINESS',
+    'uneven_texture': 'UNEVEN_TEXTURE',
+    'dark_circles': 'DARK_CIRCLES',
+    'puffiness': 'PUFFINESS',
+    'scarring': 'SCARRING',
+    'sun_damage': 'SUN_DAMAGE'
   }
   
   return skinConcerns.map(c => {
@@ -184,7 +174,8 @@ const mapTexture = (texture) => {
     'foam': 'FOAM',
     'oil': 'OIL',
     'spray': 'SPRAY',
-    'serum': 'GEL' // Map 'serum' to 'GEL' as closest texture
+    'mask': 'MASK',
+    'balm': 'BALM'
   }
   
   const mapped = textureMap[texture.toLowerCase()]
@@ -194,190 +185,43 @@ const mapTexture = (texture) => {
   return mapped
 }
 
-const sampleProducts = [
+const mapAgeRange = (age) => {
+  if (age >= 0 && age <= 1) return 'AGE_0_1'
+  if (age >= 1 && age <= 3) return 'AGE_1_3'
+  if (age >= 4 && age <= 12) return 'AGE_4_12'
+  if (age >= 13 && age <= 17) return 'AGE_13_17'
+  if (age >= 18 && age <= 25) return 'AGE_18_25'
+  if (age >= 26 && age <= 35) return 'AGE_26_35'
+  if (age >= 36 && age <= 45) return 'AGE_36_45'
+  if (age >= 46 && age <= 60) return 'AGE_46_60'
+  if (age >= 60) return 'AGE_60_PLUS'
+  
+  return 'AGE_18_25' // Default fallback
+}
+
+const comprehensiveProducts = [
+  // CORE CATEGORY - Essential daily products
   {
     name: "Gentle Daily Cleanser",
     brand: "CeraVe",
     type: "cleanser",
     gender: "unisex",
-    age: 18,
-    budget: "low",
+    age: "18-25",
+    budget: "budgetFriendly",
     category: "core",
-    use_time: ["morning", "evening"],
-    frequency: "daily",
+    use_time: ["morning", "night"],
     skin_types: ["dry", "normal", "sensitive"],
     skin_concerns: ["dehydration", "redness"],
     ingredients: [
-      {
-        name: "Ceramides",
-        function: "Barrier Repair",
-        strength: "3 essential ceramides",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      },
-      {
-        name: "Hyaluronic Acid",
-        function: "Hydrator",
-        strength: "1%",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      }
+      { name: "Ceramides", function: "Barrier Repair" },
+      { name: "Hyaluronic Acid", function: "Hydrator" }
     ],
-    avoid_with: [],
     texture: "foam",
-    comedogenic: false,
     fragrance_free: true,
     alcohol_free: true,
-    cruelty_free: true,
-    vegan: false,
     instructions: "Apply to damp skin, gently massage in circular motions, rinse thoroughly with lukewarm water.",
-    benefits: [
-      "Removes dirt and oil without stripping",
-      "Strengthens skin barrier",
-      "Suitable for sensitive skin",
-      "Non-comedogenic formula"
-    ],
-    warnings: [
-      "Avoid contact with eyes",
-      "Discontinue use if irritation occurs"
-    ],
-    price_usd: 14.99,
+    price: 14.99,
     purchase_link: "https://www.cerave.com/cleanser/facial-cleansers/hydrating-facial-cleanser",
-    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
-  },
-  {
-    name: "Vitamin C Brightening Serum",
-    brand: "The Ordinary",
-    type: "serum",
-    gender: "unisex",
-    age: 25,
-    budget: "medium",
-    category: "treatment",
-    use_time: ["morning"],
-    frequency: "daily",
-    skin_types: ["normal", "combination", "oily"],
-    skin_concerns: ["dullness", "hyperpigmentation", "fine lines"],
-    ingredients: [
-      {
-        name: "Ascorbic Acid",
-        function: "Antioxidant",
-        strength: "23%",
-        comedogenic_rating: 1,
-        irritancy_score: 2,
-        compatible_with: ["Vitamin E", "Ferulic Acid"],
-        avoid_with: ["Niacinamide", "Retinol"]
-      },
-      {
-        name: "Alpha Arbutin",
-        function: "Brightener",
-        strength: "2%",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      }
-    ],
-    avoid_with: [
-      {
-        name: "Niacinamide",
-        function: "Vitamin B3",
-        strength: "10%",
-        comedogenic_rating: 0,
-        irritancy_score: 1,
-        compatible_with: ["Most ingredients"],
-        avoid_with: ["Vitamin C"]
-      }
-    ],
-    texture: "serum",
-    comedogenic: false,
-    fragrance_free: true,
-    alcohol_free: false,
-    cruelty_free: true,
-    vegan: true,
-    instructions: "Apply 4-5 drops to clean, dry skin in the morning. Follow with sunscreen.",
-    benefits: [
-      "Brightens skin tone",
-      "Reduces dark spots",
-      "Protects against free radicals",
-      "Improves skin texture"
-    ],
-    warnings: [
-      "Use sunscreen during the day",
-      "Start with lower frequency if sensitive",
-      "Avoid using with niacinamide"
-    ],
-    price_usd: 12.90,
-    purchase_link: "https://theordinary.com/product/rdn-vitamin-c-suspension-23pct-30ml",
-    image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
-  },
-  {
-    name: "Retinol Night Cream",
-    brand: "Neutrogena",
-    type: "retinol",
-    gender: "unisex",
-    age: 30,
-    budget: "medium",
-    category: "treatment",
-    use_time: ["night"],
-    frequency: "2-3x/week",
-    skin_types: ["normal", "combination", "oily"],
-    skin_concerns: ["fine lines", "acne", "uneven texture"],
-    ingredients: [
-      {
-        name: "Retinol",
-        function: "Cell Turnover",
-        strength: "0.3%",
-        comedogenic_rating: 1,
-        irritancy_score: 3,
-        compatible_with: ["Peptides", "Hyaluronic Acid"],
-        avoid_with: ["Vitamin C", "AHA", "BHA"]
-      },
-      {
-        name: "Hyaluronic Acid",
-        function: "Hydrator",
-        strength: "1%",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      }
-    ],
-    avoid_with: [
-      {
-        name: "Vitamin C",
-        function: "Antioxidant",
-        strength: "20%",
-        comedogenic_rating: 1,
-        irritancy_score: 2,
-        compatible_with: ["Vitamin E"],
-        avoid_with: ["Retinol", "AHA", "BHA"]
-      }
-    ],
-    texture: "cream",
-    comedogenic: false,
-    fragrance_free: true,
-    alcohol_free: true,
-    cruelty_free: false,
-    vegan: false,
-    instructions: "Apply a pea-sized amount to clean skin at night. Start with 2-3 times per week.",
-    benefits: [
-      "Reduces fine lines and wrinkles",
-      "Improves skin texture",
-      "Unclogs pores",
-      "Stimulates collagen production"
-    ],
-    warnings: [
-      "Use only at night",
-      "Always wear sunscreen during the day",
-      "Start slowly to avoid irritation",
-      "Avoid using with other exfoliants"
-    ],
-    price_usd: 24.99,
-    purchase_link: "https://www.neutrogena.com/face/anti-aging/rapid-wrinkle-repair-regenerating-cream",
     image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
   },
   {
@@ -385,121 +229,365 @@ const sampleProducts = [
     brand: "La Roche-Posay",
     type: "sunscreen",
     gender: "unisex",
-    age: 18,
-    budget: "medium",
+    age: "18-25",
+    budget: "midRange",
     category: "core",
     use_time: ["morning"],
-    frequency: "daily",
-    skin_types: ["dry", "normal", "combination", "oily", "sensitive"], // Changed from "all" to specific types
-    skin_concerns: ["sun damage", "hyperpigmentation"],
+    skin_types: ["dry", "normal", "combination", "oily", "sensitive"],
+    skin_concerns: ["sun_damage", "hyperpigmentation"],
     ingredients: [
-      {
-        name: "Zinc Oxide",
-        function: "Physical Sunscreen",
-        strength: "12%",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      },
-      {
-        name: "Titanium Dioxide",
-        function: "Physical Sunscreen",
-        strength: "5%",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      }
+      { name: "Zinc Oxide", function: "Physical Sunscreen" },
+      { name: "Titanium Dioxide", function: "Physical Sunscreen" }
     ],
-    avoid_with: [],
     texture: "lotion",
-    comedogenic: false,
     fragrance_free: true,
     alcohol_free: true,
-    cruelty_free: true,
-    vegan: false,
     instructions: "Apply liberally 15 minutes before sun exposure. Reapply every 2 hours.",
-    benefits: [
-      "Broad spectrum protection",
-      "Water resistant",
-      "Non-comedogenic",
-      "Suitable for sensitive skin"
-    ],
-    warnings: [
-      "Reapply every 2 hours",
-      "Reapply after swimming or sweating",
-      "Keep out of eyes"
-    ],
-    price_usd: 19.99,
+    price: 19.99,
     purchase_link: "https://www.laroche-posay.us/anthelios-ultra-light-fluid-facial-sunscreen-spf-50",
     image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
   },
   {
+    name: "Daily Moisturizer",
+    brand: "Neutrogena",
+    type: "moisturizer",
+    gender: "unisex",
+    age: "18-25",
+    budget: "budgetFriendly",
+    category: "core",
+    use_time: ["morning", "night"],
+    skin_types: ["dry", "normal", "combination"],
+    skin_concerns: ["dehydration", "dryness"],
+    ingredients: [
+      { name: "Glycerin", function: "Humectant" },
+      { name: "Dimethicone", function: "Emollient" }
+    ],
+    texture: "lotion",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply to clean skin morning and night. Use a dime-sized amount for face and neck.",
+    price: 12.99,
+    purchase_link: "https://www.neutrogena.com/face/moisturizers/hydro-boost-water-gel",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+
+  // TREATMENT CATEGORY - Targeted solutions
+  {
+    name: "Vitamin C Brightening Serum",
+    brand: "The Ordinary",
+    type: "serum",
+    gender: "unisex",
+    age: "26-35",
+    budget: "midRange",
+    category: "treatment",
+    use_time: ["morning"],
+    skin_types: ["normal", "combination", "oily"],
+    skin_concerns: ["dullness", "hyperpigmentation", "fine_lines"],
+    ingredients: [
+      { name: "Ascorbic Acid", function: "Antioxidant" },
+      { name: "Alpha Arbutin", function: "Brightener" }
+    ],
+    texture: "gel",
+    fragrance_free: true,
+    alcohol_free: false,
+    instructions: "Apply 4-5 drops to clean, dry skin in the morning. Follow with sunscreen.",
+    price: 12.90,
+    purchase_link: "https://theordinary.com/product/rdn-vitamin-c-suspension-23pct-30ml",
+    image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Retinol Night Cream",
+    brand: "Neutrogena",
+    type: "retinoid",
+    gender: "unisex",
+    age: "26-35",
+    budget: "midRange",
+    category: "treatment",
+    use_time: ["night"],
+    skin_types: ["normal", "combination", "oily"],
+    skin_concerns: ["fine_lines", "acne", "uneven_texture"],
+    ingredients: [
+      { name: "Retinol", function: "Cell Turnover" },
+      { name: "Hyaluronic Acid", function: "Hydrator" }
+    ],
+    texture: "cream",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply a pea-sized amount to clean skin at night. Start with 2-3 times per week.",
+    price: 24.99,
+    purchase_link: "https://www.neutrogena.com/face/anti-aging/rapid-wrinkle-repair-regenerating-cream",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Niacinamide Serum",
+    brand: "The Ordinary",
+    type: "serum",
+    gender: "unisex",
+    age: "18-25",
+    budget: "budgetFriendly",
+    category: "treatment",
+    use_time: ["morning", "night"],
+    skin_types: ["oily", "combination", "acne_prone"],
+    skin_concerns: ["acne", "pores", "oiliness"],
+    ingredients: [
+      { name: "Niacinamide", function: "Oil Control" },
+      { name: "Zinc PCA", function: "Sebum Regulation" }
+    ],
+    texture: "gel",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply 2-3 drops to clean skin. Can be used morning and night.",
+    price: 8.90,
+    purchase_link: "https://theordinary.com/product/rdn-niacinamide-10pct-zinc-1pct-30ml",
+    image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Peptide Complex Serum",
+    brand: "The Inkey List",
+    type: "serum",
+    gender: "unisex",
+    age: "36-45",
+    budget: "midRange",
+    category: "treatment",
+    use_time: ["morning", "night"],
+    skin_types: ["mature", "dry", "normal"],
+    skin_concerns: ["fine_lines", "wrinkles", "dehydration"],
+    ingredients: [
+      { name: "Matrixyl 3000", function: "Collagen Stimulation" },
+      { name: "Hyaluronic Acid", function: "Hydration" }
+    ],
+    texture: "gel",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply 2-3 drops to clean skin. Use morning and night for best results.",
+    price: 16.99,
+    purchase_link: "https://theinkeylist.com/products/peptide-moisturizer",
+    image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
+  },
+
+  // HYDRATION CATEGORY - Moisture-focused products
+  {
     name: "Hydrating Face Mask",
     brand: "Laneige",
-    type: "sleeping mask",
+    type: "sleepingMask",
     gender: "unisex",
-    age: 20,
-    budget: "high",
+    age: "18-25",
+    budget: "Premium",
     category: "hydration",
     use_time: ["night"],
-    frequency: "2-3x/week",
     skin_types: ["dry", "normal", "combination"],
     skin_concerns: ["dehydration", "dullness"],
     ingredients: [
-      {
-        name: "Hyaluronic Acid",
-        function: "Hydrator",
-        strength: "Multiple weights",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      },
-      {
-        name: "Ceramides",
-        function: "Barrier Repair",
-        strength: "3 essential ceramides",
-        comedogenic_rating: 0,
-        irritancy_score: 0,
-        compatible_with: ["All ingredients"],
-        avoid_with: []
-      }
+      { name: "Hyaluronic Acid", function: "Hydrator" },
+      { name: "Ceramides", function: "Barrier Repair" }
     ],
-    avoid_with: [],
-    texture: "gel",
-    comedogenic: false,
+    texture: "mask",
     fragrance_free: false,
     alcohol_free: true,
-    cruelty_free: false,
-    vegan: false,
     instructions: "Apply a thin layer to clean skin before bed. Leave on overnight and rinse in the morning.",
-    benefits: [
-      "Intense hydration",
-      "Improves skin texture",
-      "Reduces fine lines",
-      "Brightens complexion"
-    ],
-    warnings: [
-      "Contains fragrance",
-      "Use only at night",
-      "Avoid if sensitive to fragrance"
-    ],
-    price_usd: 34.00,
+    price: 34.00,
     purchase_link: "https://www.laneige.com/us/sleeping-mask/water-sleeping-mask",
     image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
-  }
+  },
+  {
+    name: "Hyaluronic Acid Serum",
+    brand: "The Ordinary",
+    type: "serum",
+    gender: "unisex",
+    age: "18-25",
+    budget: "budgetFriendly",
+    category: "hydration",
+    use_time: ["morning", "night"],
+    skin_types: ["dry", "dehydrated", "normal", "sensitive"],
+    skin_concerns: ["dehydration", "dryness"],
+    ingredients: [
+      { name: "Hyaluronic Acid", function: "Hydrator" },
+      { name: "B5", function: "Skin Repair" }
+    ],
+    texture: "gel",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply 2-3 drops to damp skin. Can be used morning and night.",
+    price: 7.90,
+    purchase_link: "https://theordinary.com/product/rdn-hyaluronic-acid-2pct-b5-30ml",
+    image_url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Intensive Moisture Cream",
+    brand: "First Aid Beauty",
+    type: "moisturizer",
+    gender: "unisex",
+    age: "26-35",
+    budget: "midRange",
+    category: "hydration",
+    use_time: ["morning", "night"],
+    skin_types: ["dry", "dehydrated", "sensitive"],
+    skin_concerns: ["dehydration", "dryness", "sensitivity"],
+    ingredients: [
+      { name: "Colloidal Oatmeal", function: "Soothing" },
+      { name: "Ceramides", function: "Barrier Repair" }
+    ],
+    texture: "cream",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply liberally to clean skin. Use morning and night for dry skin.",
+    price: 28.00,
+    purchase_link: "https://firstaidbeauty.com/products/ultra-repair-cream",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+
+  // SPECIAL CATEGORY - Targeted treatments
+  {
+    name: "Clay Detox Mask",
+    brand: "Origins",
+    type: "clayMask",
+    gender: "unisex",
+    age: "18-25",
+    budget: "midRange",
+    category: "special",
+    use_time: ["night"],
+    skin_types: ["oily", "combination", "acne_prone"],
+    skin_concerns: ["acne", "blackheads", "pores"],
+    ingredients: [
+      { name: "White China Clay", function: "Oil Absorption" },
+      { name: "Charcoal", function: "Detoxification" }
+    ],
+    texture: "mask",
+    fragrance_free: false,
+    alcohol_free: true,
+    instructions: "Apply to clean skin, leave on for 10 minutes, then rinse thoroughly.",
+    price: 26.00,
+    purchase_link: "https://www.origins.com/product/clear-improvement-active-charcoal-mask",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Chemical Exfoliant",
+    brand: "Paula's Choice",
+    type: "exfoliant",
+    gender: "unisex",
+    age: "26-35",
+    budget: "midRange",
+    category: "special",
+    use_time: ["night"],
+    skin_types: ["normal", "combination", "oily"],
+    skin_concerns: ["uneven_texture", "blackheads", "pores"],
+    ingredients: [
+      { name: "Salicylic Acid", function: "BHA Exfoliant" },
+      { name: "Willow Bark", function: "Natural Exfoliant" }
+    ],
+    texture: "lotion",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply to clean skin with a cotton pad. Use 2-3 times per week.",
+    price: 32.00,
+    purchase_link: "https://www.paulaschoice.com/skin-perfecting-2-bha-liquid-exfoliant",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Spot Treatment",
+    brand: "Murad",
+    type: "spotTreatment",
+    gender: "unisex",
+    age: "18-25",
+    budget: "Premium",
+    category: "special",
+    use_time: ["night"],
+    skin_types: ["acne_prone", "oily", "combination"],
+    skin_concerns: ["acne", "blackheads"],
+    ingredients: [
+      { name: "Salicylic Acid", function: "BHA Treatment" },
+      { name: "Sulfur", function: "Antibacterial" }
+    ],
+    texture: "cream",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply directly to blemishes. Use only at night.",
+    price: 22.00,
+    purchase_link: "https://www.murad.com/product/rapid-relief-acne-treatment",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+
+  // OPTIONAL CATEGORY - Luxury and extras
+  {
+    name: "Face Oil Blend",
+    brand: "Sunday Riley",
+    type: "faceOil",
+    gender: "unisex",
+    age: "36-45",
+    budget: "Premium",
+    category: "optional",
+    use_time: ["night"],
+    skin_types: ["dry", "mature", "normal"],
+    skin_concerns: ["fine_lines", "dehydration", "dullness"],
+    ingredients: [
+      { name: "Jojoba Oil", function: "Moisturizing" },
+      { name: "Rosehip Oil", function: "Anti-aging" }
+    ],
+    texture: "oil",
+    fragrance_free: false,
+    alcohol_free: true,
+    instructions: "Apply 2-3 drops to clean skin at night. Can be mixed with moisturizer.",
+    price: 65.00,
+    purchase_link: "https://sundayriley.com/products/juno-anti-oxidant-face-oil",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Eye Cream",
+    brand: "Kiehl's",
+    type: "eyeCream",
+    gender: "unisex",
+    age: "26-35",
+    budget: "Premium",
+    category: "optional",
+    use_time: ["morning", "night"],
+    skin_types: ["normal", "dry", "mature"],
+    skin_concerns: ["dark_circles", "puffiness", "fine_lines"],
+    ingredients: [
+      { name: "Avocado Oil", function: "Moisturizing" },
+      { name: "Caffeine", function: "Depuffing" }
+    ],
+    texture: "cream",
+    fragrance_free: true,
+    alcohol_free: true,
+    instructions: "Apply a small amount around the eye area morning and night.",
+    price: 38.00,
+    purchase_link: "https://www.kiehls.com/eye-care/creamy-eye-treatment-with-avocado",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+  {
+    name: "Lip Treatment",
+    brand: "Laneige",
+    type: "lipCare",
+    gender: "unisex",
+    age: "18-25",
+    budget: "midRange",
+    category: "optional",
+    use_time: ["night"],
+    skin_types: ["all"],
+    skin_concerns: ["dryness"],
+    ingredients: [
+      { name: "Hyaluronic Acid", function: "Hydration" },
+      { name: "Shea Butter", function: "Moisturizing" }
+    ],
+    texture: "balm",
+    fragrance_free: false,
+    alcohol_free: true,
+    instructions: "Apply to lips before bed. Leave on overnight for intense hydration.",
+    price: 18.00,
+    purchase_link: "https://www.laneige.com/us/lip-care/lip-sleeping-mask",
+    image_url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop"
+  },
+
 ]
 
-async function addSampleProducts() {
-  console.log('Adding sample products to database...')
+async function addComprehensiveProducts() {
+  console.log('🛍️  Adding comprehensive product collection...')
   
   let successCount = 0
   let errorCount = 0
   
   try {
-    for (const product of sampleProducts) {
+    for (const product of comprehensiveProducts) {
       try {
         console.log(`\n🔄 Processing: ${product.name}...`)
         
@@ -509,25 +597,18 @@ async function addSampleProducts() {
           brand: product.brand,
           type: mapProductType(product.type),
           gender: mapGender(product.gender),
-          age: product.age,
+          age: mapAgeRange(parseInt(product.age.split('-')[0])),
           budget: mapBudgetRange(product.budget),
           category: mapCategory(product.category),
           useTime: mapUseTime(product.use_time),
-          frequency: mapFrequency(product.frequency),
           skinTypes: mapSkinTypes(product.skin_types),
           skinConcerns: mapSkinConcerns(product.skin_concerns),
           ingredients: product.ingredients,
-          avoidWith: product.avoid_with,
           texture: mapTexture(product.texture),
-          comedogenic: product.comedogenic,
           fragranceFree: product.fragrance_free,
           alcoholFree: product.alcohol_free,
-          crueltyFree: product.cruelty_free,
-          vegan: product.vegan,
           instructions: product.instructions,
-          benefits: product.benefits,
-          warnings: product.warnings,
-          priceUsd: product.price_usd,
+          price: product.price,
           purchaseLink: product.purchase_link,
           imageUrl: product.image_url
         }
@@ -537,7 +618,6 @@ async function addSampleProducts() {
         console.log(`   Gender: ${product.gender} → ${productData.gender}`)
         console.log(`   Budget: ${product.budget} → ${productData.budget}`)
         console.log(`   Category: ${product.category} → ${productData.category}`)
-        console.log(`   Frequency: ${product.frequency} → ${productData.frequency}`)
         console.log(`   Texture: ${product.texture} → ${productData.texture}`)
 
         const createdProduct = await prisma.product.create({
@@ -548,12 +628,16 @@ async function addSampleProducts() {
         successCount++
         
       } catch (error) {
-        console.error(`❌ Error adding ${product.name}:`, error.message)
-        errorCount++
+        if (error.code === 'P2002') {
+          console.log(`⚠️  Product "${product.name}" already exists, skipping...`)
+        } else {
+          console.error(`❌ Error adding ${product.name}:`, error.message)
+          errorCount++
+        }
       }
     }
 
-    console.log('\n🎉 Sample products processing complete!')
+    console.log('\n🎉 Comprehensive products processing complete!')
     console.log(`✅ Successfully added: ${successCount} products`)
     if (errorCount > 0) {
       console.log(`❌ Failed to add: ${errorCount} products`)
@@ -568,4 +652,4 @@ async function addSampleProducts() {
 }
 
 // Run the script
-addSampleProducts()
+addComprehensiveProducts()

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Ingredient, ProductCreateData } from '@/types/product'
+import { IProduct } from '@/types/product'
 import {
   mapToPrismaProductType,
   mapToPrismaGender,
   mapToPrismaBudgetRange,
   mapToPrismaCategory,
   mapToPrismaUseTime,
-  mapToPrismaFrequency,
   mapToPrismaSkinTypes,
   mapToPrismaSkinConcerns,
-  mapToPrismaTexture
+  mapToPrismaTexture,
+  mapToPrismaAgeRange
 } from '@/types/prisma-enums'
 
 export async function GET() {
@@ -32,25 +32,16 @@ export async function GET() {
       budget: product.budget,
       category: product.category,
       use_time: product.useTime,
-      frequency: product.frequency,
       skin_types: product.skinTypes,
       skin_concerns: product.skinConcerns,
       ingredients: product.ingredients,
-      avoid_with: product.avoidWith,
       texture: product.texture,
-      comedogenic: product.comedogenic,
       fragrance_free: product.fragranceFree,
       alcohol_free: product.alcoholFree,
-      cruelty_free: product.crueltyFree,
-      vegan: product.vegan,
       instructions: product.instructions,
-      benefits: product.benefits,
-      warnings: product.warnings,
-      price_usd: product.priceUsd,
+      price: product.price,
       purchase_link: product.purchaseLink,
       image_url: product.imageUrl,
-      popularity_score: product.popularityScore,
-      rating: product.rating,
       created_at: product.createdAt.toISOString(),
       updated_at: product.updatedAt.toISOString()
     }))
@@ -64,7 +55,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ProductCreateData = await request.json()
+    const body: IProduct = await request.json()
 
     // Validate required fields
     if (!body.name || !body.brand || !body.type) {
@@ -80,25 +71,18 @@ export async function POST(request: NextRequest) {
         brand: body.brand,
         type: mapToPrismaProductType(body.type),
         gender: mapToPrismaGender(body.gender),
-        age: body.age,
+        age: mapToPrismaAgeRange(parseInt(body.age.split('-')[0])),
         budget: mapToPrismaBudgetRange(body.budget),
         category: mapToPrismaCategory(body.category),
         useTime: mapToPrismaUseTime(body.use_time),
-        frequency: mapToPrismaFrequency(body.frequency),
         skinTypes: mapToPrismaSkinTypes(body.skin_types),
         skinConcerns: mapToPrismaSkinConcerns(body.skin_concerns),
         ingredients: body.ingredients as any,
-        avoidWith: body.avoid_with as any,
         texture: mapToPrismaTexture(body.texture),
-        comedogenic: body.comedogenic,
         fragranceFree: body.fragrance_free,
         alcoholFree: body.alcohol_free,
-        crueltyFree: body.cruelty_free,
-        vegan: body.vegan,
         instructions: body.instructions,
-        benefits: body.benefits,
-        warnings: body.warnings,
-        priceUsd: body.price_usd,
+        price: body.price,
         purchaseLink: body.purchase_link,
         imageUrl: body.image_url
       }

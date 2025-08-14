@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { ProductCreateData } from '@/types/product'
+import { prisma } from '@/lib/prisma'
+import { IProduct } from '@/types/product'
+import {
+  mapToPrismaProductType,
+  mapToPrismaGender,
+  mapToPrismaBudgetRange,
+  mapToPrismaCategory,
+  mapToPrismaUseTime,
+  mapToPrismaSkinTypes,
+  mapToPrismaSkinConcerns,
+  mapToPrismaTexture,
+  mapToPrismaAgeRange
+} from '@/types/prisma-enums'
 
 export async function GET(
   request: NextRequest,
@@ -9,17 +20,40 @@ export async function GET(
   try {
     const { id } = await params
 
-    const { data: product, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
-    if (error || !product) {
+    if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ product })
+    // Transform the data to match frontend expectations
+    const transformedProduct = {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      type: product.type,
+      gender: product.gender,
+      age: product.age,
+      budget: product.budget,
+      category: product.category,
+      use_time: product.useTime,
+      skin_types: product.skinTypes,
+      skin_concerns: product.skinConcerns,
+      ingredients: product.ingredients,
+      texture: product.texture,
+      fragrance_free: product.fragranceFree,
+      alcohol_free: product.alcoholFree,
+      instructions: product.instructions,
+      price: product.price,
+      purchase_link: product.purchaseLink,
+      image_url: product.imageUrl,
+      created_at: product.createdAt.toISOString(),
+      updated_at: product.updatedAt.toISOString()
+    }
+
+    return NextResponse.json({ product: transformedProduct })
   } catch (error) {
     console.error('Error in product GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -32,7 +66,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const body: ProductCreateData = await request.json()
+    const body: IProduct = await request.json()
 
     // Validate required fields
     if (!body.name || !body.brand || !body.type) {
@@ -42,17 +76,29 @@ export async function PUT(
     }
 
     // Update the product
-    const { data: product, error } = await supabase
-      .from('products')
-      .update(body)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating product:', error)
-      return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
-    }
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        name: body.name,
+        brand: body.brand,
+        type: mapToPrismaProductType(body.type),
+        gender: mapToPrismaGender(body.gender),
+        age: mapToPrismaAgeRange(parseInt(body.age.split('-')[0])),
+        budget: mapToPrismaBudgetRange(body.budget),
+        category: mapToPrismaCategory(body.category),
+        useTime: mapToPrismaUseTime(body.use_time),
+        skinTypes: mapToPrismaSkinTypes(body.skin_types),
+        skinConcerns: mapToPrismaSkinConcerns(body.skin_concerns),
+        ingredients: body.ingredients as any,
+        texture: mapToPrismaTexture(body.texture),
+        fragranceFree: body.fragrance_free,
+        alcoholFree: body.alcohol_free,
+        instructions: body.instructions,
+        price: body.price,
+        purchaseLink: body.purchase_link,
+        imageUrl: body.image_url
+      }
+    })
 
     return NextResponse.json({ product })
   } catch (error) {
@@ -68,15 +114,9 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error deleting product:', error)
-      return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
-    }
+    await prisma.product.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ message: 'Product deleted successfully' })
   } catch (error) {
