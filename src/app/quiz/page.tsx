@@ -27,6 +27,8 @@ export default function QuizPage() {
   const [showImageUpload, setShowImageUpload] = useState(false);
   const START_PROMPT = "Hi! I'm ready to start.";
 
+  const isLocal = process.env.NODE_ENV === 'development';
+
   // Lightweight cookie reader
   const getCookie = (name: string) => {
     const match = (typeof document !== 'undefined' ? document.cookie : '')
@@ -84,8 +86,11 @@ export default function QuizPage() {
       const cookieName = getCookie('quiz_name');
       let initialText = START_PROMPT;
       if (cookieEmail) {
-        initialText = `${START_PROMPT} (User name: Haseeb (User email: web.dev.haseeb@gmail.com)`;
-        // initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
+        if (isLocal) {
+          initialText = `${START_PROMPT} (User name: Haseeb (User email: web.dev.haseeb@gmail.com)`;
+        } else {
+          initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
+        }
       }
       sendMessage({
         role: "user",

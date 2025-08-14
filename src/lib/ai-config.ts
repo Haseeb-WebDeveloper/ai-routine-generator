@@ -145,30 +145,9 @@ This tool will:
      - Keywords: inflamed, raw feeling, stinging, burning, over-processed, damaged barrier, peeling
      - Core: Temporarily compromised from over-treatment or environmental damage
 
-3. **If the skin type is not clear, use the flowchart to ask a targeted question to determine the skin type.**
-
-### Question 1A: "Does your skin often appear shiny?"
-- If YES → Go to Q1B
-- If NO → Go to Q1C
-
-### Question 1B: "Do you notice that some areas of your face, like your T-zone, are oilier, while others are normal or dry?"
-- If YES → **COMBINATION SKIN**
-- If NO → **OILY SKIN**
-
-### Question 1C: "Does your skin appear dull and dehydrated on the surface and tend to develop impurities such as blackheads or clogged pores?"
-- If YES → **ASPHYXIATED SKIN**
-- If NO → Go to Q1E
-
-### Question 1E: "Do you often feel tight or dry after cleansing your skin?"
-- If YES → Go to Q1F
-- If NO → Go to **NORMAL SKIN**
-
-### Question 1F: "Does your skin tend to react easily to products or changes in temperature, resulting in redness or irritation?"
-- If YES → **SENSITIVE SKIN**
-- If NO → **DRY SKIN**
+3. **If the skin type is not clear, ask a targeted follow up question to determine the skin type.**
 
 4. **Important:**
-   - Do NOT use question numbers (like Q1A, Q1B, etc.) when asking.
    - Once skin type is determined, continue with the remaining 8 questions.
 
 
