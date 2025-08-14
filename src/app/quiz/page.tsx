@@ -84,7 +84,8 @@ export default function QuizPage() {
       const cookieName = getCookie('quiz_name');
       let initialText = START_PROMPT;
       if (cookieEmail) {
-        initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
+        initialText = `${START_PROMPT} (User name: Haseeb (User email: web.dev.haseeb@gmail.com)`;
+        // initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
       }
       sendMessage({
         role: "user",
@@ -208,7 +209,7 @@ export default function QuizPage() {
   };
 
   // ai response
-  // console.log("ai response", messages[messages.length - 1]);
+  console.log("ai response", messages[messages.length - 1]);
 
   return (
     <div className="min-h-screen">

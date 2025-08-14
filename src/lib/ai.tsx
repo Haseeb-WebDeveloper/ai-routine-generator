@@ -1,5 +1,6 @@
 import { streamText, convertToModelMessages, stepCountIs } from "ai";
-import { cohere } from '@ai-sdk/cohere';
+// import { cohere } from '@ai-sdk/cohere';
+import { google } from '@ai-sdk/google';
 import { PROMPT_TEMPLATES } from "./ai-config";
 import { agentTools } from "@/tools";
 
@@ -23,22 +24,26 @@ export async function aiAgent(messages: UIMessage[]) {
       }))
     );
 
-    // Create enhanced system prompt for lead conversion
+    console.log("[AI] modelMessages:", modelMessages);
+
     const systemPrompt = PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(
       "{conversationHistory}",
       ""
     );
-    console.log("[AI] systemPrompt:", systemPrompt);
 
-    // Use streamText with enhanced prompting and tool usage
+    // console.log("[AI] systemPrompt:", systemPrompt);
+
     const result = await streamText({
-      model: cohere("command-r-plus"),
-      messages: [{ role: "system", content: systemPrompt }, ...modelMessages],
+      model: google("gemini-2.5-flash"),
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...modelMessages,
+      ],
       tools: agentTools,
       stopWhen: stepCountIs(15),
       onFinish: async (event) => {
         console.log("[AI] Stream finished:");
-        console.log("[AI] Final text:", event.text);
+        console.log("[AI] Final text:", event.text || "[No text returned]");
         console.log("[AI] Usage:", event.usage);
         if (event.toolCalls?.length > 0) {
           console.log("[AI] Tool calls:", JSON.stringify(event.toolCalls, null, 2));

@@ -59,7 +59,7 @@ export type ProductType =
   | "pore minimizer"
   | "sebum control gel";
 
-export type SkinType = "dry" | "oily" | "combination" | "sensitive" | "normal";
+export type SkinType = "dry" | "oily" | "combination" | "sensitive" | "normal" | "asphyxiated";
 
 export type SkinConcern =
   | "acne"

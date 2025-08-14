@@ -14,7 +14,6 @@ interface ProductCandidate {
 interface ToolProfile {
   skinType?: string;
   skinConcerns?: string[];
-  budget?: string;
   gender?: string;
   age?: string;
   allergies?: string;
@@ -45,7 +44,7 @@ function toStringArrayOpt(value: unknown): string[] | undefined {
 
 export const planAndSendRoutine = tool({
   description:
-    "Find best-fit products for the user's profile, generate a skincare routine routine, and send it to the user's email all in one step. Use this tool only after all 10 questions are answered.",
+    "Find best-fit products for the user's profile, generate a skincare routine routine, and send it to the user's email all in one step. Use this tool only after all 9 questions are answered.",
   inputSchema: z
     .object({
       skinType: z.string().optional().describe("User's skin type. (dry, oily, combination, sensitive, normal, asphyxiated)"),
@@ -53,7 +52,6 @@ export const planAndSendRoutine = tool({
         .array(z.string())
         .optional()
         .describe("User's skin concerns in array format like [acne, aging, dark spots, dullness, sensitivity, etc.] for no skin concerns provide empty array []."),
-      budget: z.string().optional().describe("User's budget. (low, medium, high)"),
       gender: z.string().optional().describe("User's gender. (male, female)"),
       age: z.string().optional().describe("User's age. (18-25, 26-35, 36-45, 46-55, 56+)"),
       allergies: z.string().optional().describe("User's allergies. (fragrance-free, avoid retinoids, etc.) If no allergies then ignore this field as it is optional."),
@@ -77,7 +75,6 @@ export const planAndSendRoutine = tool({
 
       // Defensive normalization for required types
       const skinType = toStringOpt(profile.skinType);
-      const budget = toStringOpt(profile.budget);
       const gender = toStringOpt(profile.gender);
       const skinConcerns = toStringArrayOpt(profile.skinConcerns);
       const email = profile.email;
@@ -92,7 +89,6 @@ export const planAndSendRoutine = tool({
         skinType,
         skinConcerns,
         gender,
-        budget,
         email,
       });
 
@@ -116,7 +112,6 @@ export const planAndSendRoutine = tool({
           body: JSON.stringify({
             skinType,
             skinConcerns,
-            budget,
             gender,
           }),
         }
