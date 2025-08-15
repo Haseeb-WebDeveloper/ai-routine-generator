@@ -204,29 +204,26 @@ export const planAndSendRoutine = tool({
         - Routine Preference: complexity
 
         ## REQUIRED OUTPUT FORMAT:
-        # Your Personalized Skincare Routine by Dr. Lavera
+        Your Personalized Skincare Routine by **Dr. Lavera**
 
         **What I noticed about your skin:**
-          [Personal observations about their skin type and concerns]
+        [Personal observations about their skin type and concerns]
 
-       **Your Morning Routine ☀️**
-        1. **Product Name**
-          Why: Your skin needs this because...
-          How: Just [simple instruction]
+        ## Your Morning Routine ☀️
 
-        2. **Product Name**
-          Why: Your skin needs this because...
-          How: Just [simple instruction]
+        ### Product Name
+        **Why**: Your skin needs this because...
+        **How**: Just [simple instruction]
 
-          soo on...
+        ### Product Name  
+        **Why**: Your skin needs this because...
+        **How**: Just [simple instruction]
 
-        **Your Evening Routine 🌙**
+        ## Your Evening Routine 🌙
         [Same simple format]
       `;
 
-      const prompt = `CLINICAL CONSULTATION REQUEST:
-
-      PATIENT PROFILE:
+      const prompt = `Here is my profile:
       ${JSON.stringify(
         {
           skinType,
@@ -242,10 +239,9 @@ export const planAndSendRoutine = tool({
         2
       )}
 
-      CURATED PRODUCT SELECTION:
+      Here is the curated product selection:
       ${JSON.stringify(candidates, null, 2)}
 
-     
       Please create a personalized skincare routine using only the products above.
 
       Key Focus Areas:

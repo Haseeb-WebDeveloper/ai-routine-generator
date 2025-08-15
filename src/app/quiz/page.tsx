@@ -3,14 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { XCircle, Loader2, Settings } from "lucide-react";
+import { XCircle, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
 import Navbar from "@/components/Navbar";
 import { getToolDisplayName } from "@/lib/get-tool-name";
 import Image from "next/image";
-import { Textarea } from "@/components/ui/textarea";
 import { ProductDisplay, Product } from "@/components/ProductDisplay";
+
+// Import AI Elements
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputSubmit,
+} from "@/components/ai-elements/prompt-input";
+import { Tool, ToolHeader, ToolContent } from "@/components/ai-elements/tool";
+import { Loader } from "@/components/ai-elements/loader";
+import { Response } from "@/components/ai-elements/response";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -245,64 +260,74 @@ export default function QuizPage() {
         <div className=" pt-8 pb-32">
           <div>
             {/* Chat Messages */}
-            <div className="space-y-4 mb-6 ">
-              {messages.map((message: any, index: any) => {
-                // Hide only the initial start message (even if it includes USER_EMAIL)
-                const shouldHideMessage =
-                  message.role === "user" &&
-                  message.parts &&
-                  message.parts.length > 0 &&
-                  String(message.parts[0].text || "").startsWith(START_PROMPT);
+            <Conversation className="mb-6">
+              <ConversationContent>
+                {messages.map((message: any, index: any) => {
+                  // Hide only the initial start message (even if it includes USER_EMAIL)
+                  const shouldHideMessage =
+                    message.role === "user" &&
+                    message.parts &&
+                    message.parts.length > 0 &&
+                    String(message.parts[0].text || "").startsWith(
+                      START_PROMPT
+                    );
 
-                if (shouldHideMessage) return null;
+                  if (shouldHideMessage) return null;
 
-                const content = extractMessageContent(message);
-                const isToolActive = hasActiveTool(message);
-                const toolName = getToolDisplayName(message);
+                  const content = extractMessageContent(message);
+                  const isToolActive = hasActiveTool(message);
+                  const toolName = getToolDisplayName(message);
 
-                return (
-                  <div
-                    key={message.id || index}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
+                  return (
                     <div
-                      className={`lg:max-w-[80%] max-w-[95%]  py-3 border-b border-foreground/20`}
+                      key={message.id || index}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      } mb-4`}
                     >
-                      {/* Show tool execution indicator */}
-                      {isToolActive && (
-                        <div className="flex items-center space-x-2 mb-2 text-foreground">
-                          <Settings className="h-4 w-4 animate-spin" />
-                          <span className="text-sm font-medium">
-                            {toolName}
-                          </span>
-                        </div>
-                      )}
+                      <div
+                        className={`lg:max-w-[80%] max-w-[95%] py-3 border-b border-foreground/20`}
+                      >
+                        {/* Show tool execution indicator */}
+                        {isToolActive && (
+                          <div className="flex items-center gap-2 mb-2 text-foreground">
+                            <Settings className="h-4 w-4 animate-spin" />
+                            <span className="text-sm font-medium">
+                              {toolName}
+                            </span>
+                          </div>
+                        )}
 
-                      {/* Show message content */}
-                      {content && (
-                        <p className="whitespace-pre-wrap">{content}</p>
-                      )}
+                        {/* Show message content */}
+                        {content && (
+                          <Response className="whitespace-pre-wrap">
+                            {content}
+                          </Response>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Show loading indicator only while waiting for AI to start streaming */}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="rounded-lg py-3">
+                      <div className="flex items-center space-x-2">
+                        <Loader size={16} />
+                        <span>Lavera is thinking...</span>
+                      </div>
                     </div>
                   </div>
-                );
-              })}
+                )}
 
-              {/* Show loading indicator only while waiting for AI to start streaming */}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="rounded-lg py-3">
-                    <div className="flex items-center space-x-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Lavera is thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Do NOT show loading indicator while streaming */}
-              <div ref={chatEndRef} />
-            </div>
+                <div ref={chatEndRef} />
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
+
             {/* Products Display */}
             <ProductDisplay products={products} />
 
@@ -319,71 +344,68 @@ export default function QuizPage() {
         </div>
         <div className="fixed lg:bottom-2 bottom-4 left-1/2 -translate-x-1/2 w-full mx-auto flex justify-center items-center lg:px-4 px-4 bg-background">
           {/* Input Form */}
-          <form
-            className="flex flex-col gap-2 max-w-4xl w-full rounded-2xl border border-foreground/20 shadow bg-foreground/[0.02] p-4"
+          <PromptInput
+            className="max-w-4xl w-full p-4"
             onSubmit={handleFormSubmit}
             onClick={handleFormClick}
           >
-            <Textarea
+            <PromptInputTextarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleFormSubmit(e as any);
-                }
-              }}
               placeholder="Type your message here..."
-              className="field-sizing-content max-h-29.5 min-h-0 resize-none font-normal transition-all chatbot-scrollbar w-full py-0 rounded-none px-0 focus:outline-none focus:ring-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base"
+              minHeight={24}
+              maxHeight={164}
               autoFocus
+              className="p-0 h-fit "
             />
-            <div className="flex justify-end items-center gap-2">
-              {messages.length > 0 && (
-                <Button
-                  onClick={resetQuiz}
-                  className="cursor-pointer aspect-square h-10 p-2.5 shadow-none w-fit bg-background border border-foreground/20 transition-colors group hover:bg-background"
-                >
-                  <Image
-                    src="/icon/reset.svg"
-                    alt="Reset"
-                    className="h-full w-full opacity-50 group-hover:opacity-100 transition-opacity"
-                    width={100}
-                    height={100}
-                  />
-                </Button>
-              )}
-              {isLoading ? (
-                <Button
-                  type="button"
-                  onClick={stop}
-                  className="cursor-pointer aspect-square h-10 p-2.5 shadow-none w-fit bg-background border border-foreground/20 transition-colors"
-                >
-                  <Image
-                    src="/icon/stop.svg"
-                    alt="Stop"
-                    className="h-full w-full"
-                    width={100}
-                    height={100}
-                  />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="cursor-pointer disabled:cursor-not-allowed aspect-square h-10 p-2.5 shadow-none w-fit bg-primary transition-colors"
-                >
-                  <Image
-                    src="/icon/up-arrow.svg"
-                    alt="Send"
-                    className="h-full w-full"
-                    width={100}
-                    height={100}
-                  />
-                </Button>
-              )}
-            </div>
-          </form>
+            <PromptInputToolbar>
+              <div className="flex items-center justify-end gap-2 w-full">
+                {messages.length > 0 && (
+                  <Button
+                    onClick={resetQuiz}
+                    className="cursor-pointer aspect-square h-10 p-2.5 shadow-none w-fit bg-background border border-foreground/20 transition-colors group hover:bg-background"
+                  >
+                    <Image
+                      src="/icon/reset.svg"
+                      alt="Reset"
+                      className="h-full w-full opacity-50 group-hover:opacity-100 transition-opacity"
+                      width={100}
+                      height={100}
+                    />
+                  </Button>
+                )}
+                {isLoading ? (
+                  <Button
+                    type="button"
+                    onClick={stop}
+                    className="cursor-pointer aspect-square h-10 p-2.5 shadow-none w-fit bg-background border border-foreground/20 transition-colors"
+                  >
+                    <Image
+                      src="/icon/stop.svg"
+                      alt="Stop"
+                      className="h-full w-full"
+                      width={100}
+                      height={100}
+                    />
+                  </Button>
+                ) : (
+                  <PromptInputSubmit
+                    disabled={!input.trim()}
+                    className="cursor-pointer disabled:cursor-not-allowed aspect-square h-10 p-2.5 shadow-none w-fit bg-primary transition-colors"
+                  >
+                    <Image
+                      src="/icon/up-arrow.svg"
+                      alt="Send"
+                      className="h-full w-full"
+                      width={100}
+                      height={100}
+                    />
+                  </PromptInputSubmit>
+                )}
+              </div>
+            </PromptInputToolbar>
+          </PromptInput>
         </div>
       </div>
 
