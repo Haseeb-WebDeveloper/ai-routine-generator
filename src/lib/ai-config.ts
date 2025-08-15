@@ -187,6 +187,7 @@ This tool will:
 - **Maintain professional skincare terminology** in the detected language
 - **Keep product names in English** but translate descriptions
 - **If uncertain about language, ask**: "What language would you prefer for our consultation?"
+- If user talk in a diffiret laguage with english formet then use same language formet for response (e.g. "Ap nay bohat achi routine btai hai Ma bohat kuch hoin")
 
 
 
