@@ -1,16 +1,25 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
 import { cohere } from "@ai-sdk/cohere";
+import { SkinType, Texture, UseTime } from "@/types/product";
+import { SkinConcern } from "@prisma/client";
+import { Ingredient } from "@/types/product";
 
 // Type-safe interfaces for the tool
 interface ProductCandidate {
   name: string;
   brand: string;
   type: string;
+  skinTypes?: SkinType[];
+  skinConcerns?: SkinConcern[];
+  ingredients?: Ingredient[];
+  texture?: Texture;
   price: number | null;
   link: string;
   score?: number;
   imageUrl?: string;
+  instructions?: string;
+  useTime?: UseTime[];
 }
 
 interface ToolProfile {
@@ -22,6 +31,8 @@ interface ToolProfile {
   climate?: string;
   routineComplexity?: string;
   email: string;
+  budget?: string;
+  currentRoutine?: string;
 }
 
 // Enhanced normalizers
@@ -64,7 +75,7 @@ function inferBudgetFromProfile(profile: ToolProfile): string {
 
 export const planAndSendRoutine = tool({
   description:
-    "Find best-fit products for the user's profile, generate a personalized skincare routine, and send it to the user's email all in one step. Use this tool only after all 9 questions are answered.",
+    "Find best-fit products for the user's profile, generate a personalized skincare routine, and send it to the user's email all in one step. Use this tool only after all 10 questions are answered.",
   inputSchema: z
     .object({
       skinType: z
@@ -101,9 +112,17 @@ export const planAndSendRoutine = tool({
         .describe(
           "User's desired routine complexity (minimal, standard, comprehensive). Make sure lowercase."
         ),
+      budget: z
+        .string()
+        .optional()
+        .describe("User's skincare budget range (budgetFriendly, midRange, Premium)"),
       email: z
         .string()
         .describe("User's email address for sending the routine"),
+      currentRoutine: z
+        .string()
+        .optional()
+        .describe("User's current skincare routine"),
     })
     .describe(
       "Complete user profile for personalized skincare routine generation"
@@ -111,7 +130,6 @@ export const planAndSendRoutine = tool({
 
   execute: async (profile: ToolProfile) => {
     try {
-
       // Normalize inputs
       const skinType = toStringOpt(profile.skinType);
       const gender = toStringOpt(profile.gender);
@@ -121,10 +139,9 @@ export const planAndSendRoutine = tool({
       const routineComplexity =
         toStringOpt(profile.routineComplexity) || "standard";
       const email = profile.email;
-
-      // Infer budget if not explicitly provided
-      const inferredBudget = inferBudgetFromProfile(profile);
-
+      // Fix: always use explicit budget if provided, otherwise infer
+      const budget = toStringOpt(profile.budget) || inferBudgetFromProfile(profile);
+      const currentRoutine = toStringOpt(profile.currentRoutine);
       // Validate required fields
       if (!email || !skinType) {
         throw new Error("Email and skin type are required fields");
@@ -141,11 +158,10 @@ export const planAndSendRoutine = tool({
         skinConcerns,
         gender,
         age,
-        budget: inferredBudget,
+        budget,
         routineComplexity,
         climate,
       };
-
 
       // Call enhanced product search API
       const searchResponse = await fetch(
@@ -173,7 +189,6 @@ export const planAndSendRoutine = tool({
       }
 
       const candidates: ProductCandidate[] = searchResult.products || [];
-   
 
       if (candidates.length === 0) {
         throw new Error(
@@ -233,7 +248,8 @@ export const planAndSendRoutine = tool({
           climate,
           routineComplexity,
           allergies: profile.allergies,
-          budget: inferredBudget,
+          budget,
+          currentRoutine,
         },
         null,
         2
@@ -259,6 +275,9 @@ export const planAndSendRoutine = tool({
         "[TOOL/enhanced_plan] Generating routine with enhanced context..."
       );
 
+      console.log("prompt from tool", prompt);
+      console.log("system from tool", system);
+
       const { text } = await generateText({
         model: cohere("command-r-plus"),
         system,
@@ -270,16 +289,15 @@ export const planAndSendRoutine = tool({
         (text || "").trim() ||
         "Your personalized routine will be generated shortly. Please check your email.";
 
-
-       // Prepare structured product data separately
-       const structuredProducts = candidates.map(product => ({
+      // Prepare structured product data separately
+      const structuredProducts = candidates.map(product => ({
         productName: product.name,
         brand: product.brand,
         price: product.price,
-        imageUrl: product.imageUrl, // You can add real image URLs here
+        imageUrl: product.imageUrl,
         buyLink: product.link,
         type: product.type,
-        description: `Perfect for ${skinType} skin with ${skinConcerns.join(', ') || 'general care'} concerns`
+        description: `Perfect for ${skinType} skin with ${skinConcerns.join(', ') || 'general care'} concerns`,
       }));
 
       // Send enhanced email
@@ -300,6 +318,7 @@ export const planAndSendRoutine = tool({
             concerns: skinConcerns,
             complexity: routineComplexity,
             productCount: candidates.length,
+            budget,
           },
         }),
       });

@@ -257,7 +257,7 @@ export default function QuizPage() {
     <div className="min-h-screen relative px-4">
       <Navbar />
       <div className="max-w-4xl lg:px-4 px-2 w-full mx-auto h-full">
-        <div className=" pt-8 pb-32">
+        <div className=" pt-8 pb-36">
           <div>
             {/* Chat Messages */}
             <Conversation className="mb-6">

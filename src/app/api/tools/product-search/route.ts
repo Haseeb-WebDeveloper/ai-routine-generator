@@ -102,7 +102,13 @@ export async function POST(request: NextRequest) {
         price: p.price ? Number(p.price) : null,
         link: p.purchaseLink,
         score: p.score,
-        imageUrl: p.imageUrl
+        imageUrl: p.imageUrl,
+        instructions: p.instructions || '',
+        useTime: p.useTime,
+        texture: p.texture,
+        skinTypes: p.skinTypes,
+        skinConcerns: p.skinConcerns,
+        ingredients: p.ingredients,
       }))
       
       return NextResponse.json({ 
@@ -144,7 +150,13 @@ export async function POST(request: NextRequest) {
       price: p.price ? Number(p.price) : null,
       link: p.purchaseLink,
       score: p.score,
-      imageUrl: p.imageUrl
+      imageUrl: p.imageUrl,
+      instructions: p.instructions || '',
+      useTime: p.useTime,
+      texture: p.texture,
+      skinTypes: p.skinTypes,
+      skinConcerns: p.skinConcerns,
+      ingredients: p.ingredients,
     }))
 
     return NextResponse.json({ 

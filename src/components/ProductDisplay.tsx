@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, ExternalLink } from "lucide-react";
 import Image from "next/image";
 
 export interface Product {
@@ -18,52 +18,56 @@ interface ProductDisplayProps {
 }
 
 export function ProductDisplay({ products }: ProductDisplayProps) {
-  // Don't render anything if no products
   if (!products || products.length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-8 mt-8 pb-8">
-      <div className="flex items-center gap-2 text-foreground">
-        <ShoppingBag className="h-5 w-5 text-blue-500" />
-        <h3 className="text-lg font-medium">Recommended Products</h3>
+    <div className="mt-8 space-y-8">
+      {/* Refined header */}
+      <div className="flex items-center gap-3">
+        <ShoppingBag className="h-5 w-5 text-neutral-400" />
+        <h3 className="text-xl font-semibold text-neutral-900 tracking-tight">
+          Recommended Products
+        </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Premium product grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product, index) => (
           <div
             key={`${product.productName}-${index}`}
-            className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+            className="group bg-background border border-border rounded-2xl transition-all duration-300"
           >
-            <div className="flex flex-col h-full">
-              <div className="flex-1">
-                <Image
-                  src={product.imageUrl}
-                  alt={product.productName}
-                  width={100}
-                  height={100}
-                />
-                <h4 className="text-lg font-medium">{product.productName}</h4>
-                <p className="text-sm text-muted-foreground">{product.brand}</p>
-                <div className="mt-2 mb-3">
-                  <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                    {product.type}
-                  </span>
+            {/* Product image */}
+            <div className="relative aspect-square rounded-t-xl overflow-hidden">
+              <Image
+                src={product.imageUrl}
+                alt={product.productName}
+                width={400}
+                height={400}
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+
+            {/* Product details */}
+            <div className="flex flex-col justify-between gap-4 p-4">
+              <h4 className="font-medium text-xl leading-snug line-clamp-1">
+                {product.productName}
+              </h4>
+
+              <div className="flex items-center justify-between">
+                <div className="text-base font-semibold">
+                  ${product.price.toFixed(2)}
                 </div>
-                {product.description && (
-                  <p className="text-sm mt-2">{product.description}</p>
-                )}
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="font-medium">${product.price.toFixed(2)}</span>
+
                 <a
                   href={product.buyLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
+                  className="px-6 py-2 bg-primary/80 text-background text-sm font-medium rounded-lg"
                 >
-                  View Product
+                  Buy Now
                 </a>
               </div>
             </div>

@@ -68,10 +68,10 @@ export async function aiAgent(messages: UIMessage[]) {
       tools: agentTools,
       stopWhen: stepCountIs(15),
       onFinish: async (event) => {
-        console.log("Event call", event.toolCalls);
-        console.log("Event Content", event.content);
-        console.log("Event toolResults", event.toolResults);
-        console.log("Event response", event.response);
+        // console.log("Event call", event.toolCalls);
+        // console.log("Event Content", event.content);
+        // console.log("Event toolResults", event.toolResults);
+        // console.log("Event response", event.response);
         
         // Check if there are tool results with products
         if (event.toolResults && event.toolResults.length > 0) {
