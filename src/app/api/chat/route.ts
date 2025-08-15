@@ -4,7 +4,6 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    console.log("[API/CHAT] Incoming request");
     const body = await req.json();
     const { messages } = body;
 
@@ -12,9 +11,6 @@ export async function POST(req: Request) {
       console.error("[API/CHAT] Missing or invalid messages in request", { body });
       return new Response("Messages array is required", { status: 400 });
     }
-
-    console.log("[API/CHAT] Messages count:", messages.length);
-    console.log("[API/CHAT] First message snippet:", JSON.stringify(messages[0], null, 2));
 
     const response = await aiAgent(messages);
     return response;

@@ -16,10 +16,6 @@ export async function POST(request: NextRequest) {
   try {
     const { email, summary, subject = "Your Personalized Skincare Routine" } = await request.json();
 
-    console.log("[API/send-mail] email:", email)
-    console.log("[API/send-mail] summary:", summary)
-    console.log("[API/send-mail] subject:", subject)
-
     // Validate required fields
     if (!email || !summary) {
       return NextResponse.json(

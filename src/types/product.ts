@@ -93,6 +93,8 @@ export type Category =
   | "special"    // Situational or seasonal use
   | "optional";  // Non-essential extras
 
+
+  // TODO 3
 export type AgeRange =
   | "0-1"    // Infants – ultra-gentle, fragrance-free
   | "1-3"    // Toddlers – baby lotions, diaper creams

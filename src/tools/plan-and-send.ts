@@ -10,6 +10,7 @@ interface ProductCandidate {
   price: number | null;
   link: string;
   score?: number;
+  imageUrl?: string;
 }
 
 interface ToolProfile {
@@ -110,13 +111,6 @@ export const planAndSendRoutine = tool({
 
   execute: async (profile: ToolProfile) => {
     try {
-      console.log(
-        "[TOOL/enhanced_plan] === Starting enhanced routine planning ==="
-      );
-      console.log(
-        "[TOOL/enhanced_plan] Input profile:",
-        JSON.stringify(profile, null, 2)
-      );
 
       // Normalize inputs
       const skinType = toStringOpt(profile.skinType);
@@ -152,10 +146,6 @@ export const planAndSendRoutine = tool({
         climate,
       };
 
-      console.log(
-        "[TOOL/enhanced_plan] Search payload:",
-        JSON.stringify(searchPayload, null, 2)
-      );
 
       // Call enhanced product search API
       const searchResponse = await fetch(
@@ -183,9 +173,7 @@ export const planAndSendRoutine = tool({
       }
 
       const candidates: ProductCandidate[] = searchResult.products || [];
-      console.log(
-        `[TOOL/enhanced_plan] Found ${candidates.length} personalized products`
-      );
+   
 
       if (candidates.length === 0) {
         throw new Error(
@@ -228,16 +216,6 @@ export const planAndSendRoutine = tool({
         ## Evening Routine 🌙
         [Same detailed format for PM products]
 
-
-        ## Advanced Tips
-        - [1-2 professional tips for maximizing routine effectiveness]
-
-        CRITICAL: End with EXACT JSON format for e-commerce integration:
-        [PRODUCTS_JSON]
-        [{"productName": "Exact Product Name", "price": 29.99, "imageUrl": "url", "brand": "Brand Name", "buyLink": "purchase_link"}]
-        [/PRODUCTS_JSON]
-
-        Make this feel like a premium dermatology consultation worth hundreds of dollars. Be specific, scientific, yet warm and encouraging.
       `;
 
       const prompt = `CLINICAL CONSULTATION REQUEST:
@@ -290,10 +268,17 @@ export const planAndSendRoutine = tool({
         (text || "").trim() ||
         "Your personalized routine will be generated shortly. Please check your email.";
 
-      console.log(
-        "[TOOL/enhanced_plan] Generated routine length:",
-        summary.length
-      );
+
+       // Prepare structured product data separately
+       const structuredProducts = candidates.map(product => ({
+        productName: product.name,
+        brand: product.brand,
+        price: product.price,
+        imageUrl: product.imageUrl, // You can add real image URLs here
+        buyLink: product.link,
+        type: product.type,
+        description: `Perfect for ${skinType} skin with ${skinConcerns.join(', ') || 'general care'} concerns`
+      }));
 
       // Send enhanced email
       const emailResponse = await fetch(`${baseUrl}/api/send-mail`, {
@@ -329,25 +314,9 @@ export const planAndSendRoutine = tool({
       );
 
       return {
-        summary,
         emailSent: true,
-        productCount: candidates.length,
-        routineComplexity,
-        message: `Perfect! I've created your personalized ${routineComplexity} skincare routine with ${
-          candidates.length
-        } carefully selected products. 
-
-Here's your complete routine:
-
-${summary}
-
-📧 **I've also sent this routine to ${email}** - check your inbox (and spam folder) for the detailed guide with purchase links and professional tips.
-
-Your routine is tailored specifically for ${skinType} skin with focus on ${
-          skinConcerns.join(", ") || "overall skin health"
-        }. Each product was selected based on your climate, age, and preferences.
-
-Thank you for trusting me with your skincare journey! 🌟`,
+        message: summary,
+        products: structuredProducts,
       };
     } catch (err) {
       console.error("[TOOL/enhanced_plan] Error:", err);

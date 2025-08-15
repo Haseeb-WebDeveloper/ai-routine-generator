@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
         type: p.type,
         price: p.price ? Number(p.price) : null,
         link: p.purchaseLink,
-        score: p.score
+        score: p.score,
+        imageUrl: p.imageUrl
       }))
       
       return NextResponse.json({ 
@@ -142,7 +143,8 @@ export async function POST(request: NextRequest) {
       type: p.type,
       price: p.price ? Number(p.price) : null,
       link: p.purchaseLink,
-      score: p.score // Include score for debugging
+      score: p.score,
+      imageUrl: p.imageUrl
     }))
 
     return NextResponse.json({ 

@@ -1,5 +1,4 @@
 import { formatRoutineText } from "@/lib/format-text-content";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { ProductCard } from "./ProductCard";
 import { ShoppingBag } from "lucide-react";
 

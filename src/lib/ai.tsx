@@ -3,6 +3,31 @@ import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { google } from '@ai-sdk/google';
 import { PROMPT_TEMPLATES } from "./ai-config";
 import { agentTools } from "@/tools";
+import { create } from 'zustand';
+
+// Define product interface
+export interface Product {
+  productName: string;
+  price: number;
+  brand: string;
+  type: string;
+  imageUrl: string;
+  buyLink: string;
+  description?: string;
+}
+
+// Create a global store for products
+interface ProductState {
+  products: Product[];
+  setProducts: (products: Product[]) => void;
+  clearProducts: () => void;
+}
+
+export const useProductStore = create<ProductState>((set) => ({
+  products: [],
+  setProducts: (products) => set({ products }),
+  clearProducts: () => set({ products: [] }),
+}));
 
 type UIPart = { type: "text"; text: string }
 type UIMessage = {
@@ -13,8 +38,8 @@ type UIMessage = {
 
 export async function aiAgent(messages: UIMessage[]) {
   try {
-    console.log("\n[AI] === Processing New Message ===");
-    console.log("[AI] Incoming UI messages:", JSON.stringify(messages, null, 2));
+
+    // console.log("[AI] messages:", messages);
 
     const modelMessages = convertToModelMessages(
       messages.map((m) => ({
@@ -24,7 +49,7 @@ export async function aiAgent(messages: UIMessage[]) {
       }))
     );
 
-    console.log("[AI] modelMessages:", modelMessages);
+    // console.log("[AI] modelMessages:", modelMessages);
 
     const systemPrompt = PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(
       "{conversationHistory}",
@@ -32,6 +57,7 @@ export async function aiAgent(messages: UIMessage[]) {
     );
 
     // console.log("[AI] systemPrompt:", systemPrompt);
+
 
     const result = await streamText({
       model: google("gemini-2.5-flash"),
@@ -42,16 +68,40 @@ export async function aiAgent(messages: UIMessage[]) {
       tools: agentTools,
       stopWhen: stepCountIs(15),
       onFinish: async (event) => {
-        console.log("[AI] Stream finished:");
-        console.log("[AI] Final text:", event.text || "[No text returned]");
-        console.log("[AI] Usage:", event.usage);
-        if (event.toolCalls?.length > 0) {
-          console.log("[AI] Tool calls:", JSON.stringify(event.toolCalls, null, 2));
+        console.log("Event call", event.toolCalls);
+        console.log("Event Content", event.content);
+        console.log("Event toolResults", event.toolResults);
+        console.log("Event response", event.response);
+        
+        // Check if there are tool results with products
+        if (event.toolResults && event.toolResults.length > 0) {
+          for (const toolResult of event.toolResults) {
+            // Check if this is the plan_and_send_routine tool
+            if (toolResult.toolName === 'plan_and_send_routine') {
+              try {
+                const output = toolResult.output;
+                if (output && typeof output === 'object' && 'value' in output) {
+                  const value = output.value as any;
+                  
+                  // Check if the output has products
+                  if (value && Array.isArray(value.products) && value.products.length > 0) {
+                    console.log("[AI] Found products in tool response:", value.products);
+                    
+                    // Store products in the global store
+                    useProductStore.getState().setProducts(value.products);
+                  }
+                }
+              } catch (error) {
+                console.error("[AI] Error processing tool result:", error);
+              }
+            }
+          }
         }
       }
     });
-
+    
     return result.toUIMessageStreamResponse();
+
   } catch (error) {
     console.error("\n[AI] === Error in aiAgent ===");
     console.error(error);
