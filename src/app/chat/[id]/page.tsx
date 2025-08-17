@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { XCircle, Settings, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
-import Navbar from "@/components/Navbar";
-import { getToolDisplayName } from "@/lib/get-tool-name";
 import Image from "next/image";
 import { ProductDisplay, Product } from "@/components/ProductDisplay";
 import { useChatStore } from "@/store/chatStore";
-import { convertAiMessagesToChat, saveConversation, fetchConversations, createNewConversation } from "@/lib/chat-helpers";
-import { ConversationHistory } from "@/components/ui/conversation-history";
+import { convertAiMessagesToChat, saveConversation, createNewConversation, fetchConversation } from "@/lib/chat-helpers";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 // Import AI Elements
 import {
@@ -28,17 +27,26 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { Loader } from "@/components/ai-elements/loader";
 import { Response } from "@/components/ai-elements/response";
+import { getToolDisplayName } from "@/lib/get-tool-name";
+import Link from "next/link";
 
-export default function QuizPage() {
+export default function ChatPage() {
+  const { id } = useParams();
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [hasSentInitial, setHasSentInitial] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [initialMessageSent, setInitialMessageSent] = useState(false);
+  const [messagesSaved, setMessagesSaved] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const START_PROMPT = "Hi! I'm ready to start.";
+  
+  // Auth context
+  const { user, isLoading: authLoading } = useAuth();
   
   // Chat store state
   const { 
@@ -50,69 +58,41 @@ export default function QuizPage() {
   } = useChatStore();
 
   const isLocal = process.env.NODE_ENV === "development";
+  const isTempConversation = typeof id === 'string' && (id.startsWith('temp-') || id.startsWith('local-'));
 
-  // Lightweight cookie reader
-  const getCookie = (name: string) => {
-    const match = (
-      typeof document !== "undefined" ? document.cookie : ""
-    ).match(
-      new RegExp(
-        "(?:^|;\\s*)" +
-          name.replace(/([.$?*|{}()\[\]\\/+^])/g, "\\$1") +
-          "=([^;]+)"
-      )
-    );
-    return match ? decodeURIComponent(match[1]) : null;
-  };
-
-  // Clean URL parameters after authentication
+  // Load conversation when ID changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("email") || url.searchParams.has("token")) {
-        // Remove query parameters and update URL without page reload
-        const cleanUrl = url.pathname;
-        window.history.replaceState({}, "", cleanUrl);
-      }
-    }
-  }, []);
-
-  // Check authentication status and load conversations
-  useEffect(() => {
-    const checkAuth = () => {
-      const quizEmail = getCookie("quiz_email");
-      const quizUserId = getCookie("quiz_user_id");
-      const quizVerified = getCookie("quiz_verified");
-
-      if (quizEmail && quizUserId && quizVerified === "1") {
-        setIsAuthenticated(true);
-        
-        // Load conversations if authenticated
+    const loadConversation = async () => {
+      if (!id) return;
+      
+      try {
         setIsLoadingConversation(true);
-        fetchConversations()
-          .then(conversations => {
-            setConversations(conversations);
-            
-            // If there's a current conversation in the store, use that
-            // Otherwise, use the most recent conversation if available
-            if (!currentConversation && conversations.length > 0) {
-              setCurrentConversation(conversations[0]);
-            }
-          })
-          .catch(error => {
-            console.error("Error loading conversations:", error);
-          })
-          .finally(() => {
-            setIsLoadingConversation(false);
-          });
+        
+        // For local IDs, try to get from localStorage first
+        if (id.toString().startsWith('local-')) {
+          // This will be handled by the chat store
+          return;
+        }
+        
+        // For server IDs, fetch from API
+        if (user && !id.toString().startsWith('temp-')) {
+          const conversation = await fetchConversation(id as string);
+          setCurrentConversation(conversation);
+        }
+      } catch (error) {
+        console.error("Error loading conversation:", error);
+        toast.error("Conversation not found");
+        router.push('/');
+      } finally {
+        setIsLoadingConversation(false);
       }
     };
-
-    checkAuth();
-    // Also check after a delay
-    const timeoutId = setTimeout(checkAuth, 1000);
-    return () => clearTimeout(timeoutId);
-  }, []);
+    
+    // Only load if we don't already have the conversation loaded
+    if (!currentConversation || currentConversation.id !== id) {
+      loadConversation();
+    }
+  }, [id, user, setCurrentConversation, router, currentConversation]);
 
   const {
     messages,
@@ -150,7 +130,7 @@ export default function QuizPage() {
         Array.isArray(part.output.products)
       ) {
         console.log(
-          "[QuizPage] Found products in message:",
+          "[ChatPage] Found products in message:",
           part.output.products
         );
         setProducts(part.output.products);
@@ -159,84 +139,122 @@ export default function QuizPage() {
     }
   }, [messages]);
 
-  // On mount, send a start message as user (hidden later), always send START_PROMPT, and include USER_EMAIL if available
+  // On mount, load conversation messages or send initial message
   useEffect(() => {
-    // If we have a current conversation with messages, don't send initial message
+    // Skip if we've already sent the initial message
+    if (initialMessageSent || messages.length > 0) return;
+    
+    // If we have a current conversation with messages, use those
     if (currentConversation && currentConversation.messages && currentConversation.messages.length > 0) {
-      // We don't directly set messages from the store due to type compatibility issues
-      // Instead, we'll use the messages from the AI SDK and save them back to the store
+      // Only send the first user message to start the conversation
+      const firstUserMessage = currentConversation.messages.find(msg => msg.role === "user");
+      if (firstUserMessage && currentConversation) {
+        setInitialMessageSent(true);
+        sendMessage({
+          role: "user",
+          parts: [{ text: firstUserMessage.content, type: "text" }],
+        }).catch((err) => {
+          console.error("Error sending initial message:", err);
+          setInitialMessageSent(false);
+        });
+      }
       return;
     }
     
-    if (!hasSentInitial) {
-      setHasSentInitial(true);
-      const cookieEmail = getCookie("quiz_email");
-      const cookieName = getCookie("quiz_name");
-      let initialText = START_PROMPT;
-      if (cookieEmail) {
-        if (isLocal) {
-          initialText = `${START_PROMPT} (User name: Haseeb (User email: web.dev.haseeb@gmail.com)`;
-        } else {
-          initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
-        }
-      }
-      
-      // Create a new conversation if we don't have one
-      if (!currentConversation) {
-        const newConversation = createNewConversation(initialText);
-        setCurrentConversation(newConversation);
-      }
-      
-      sendMessage({
-        role: "user",
-        parts: [{ text: initialText, type: "text" }],
-      }).catch((err) => {
-        console.error("Error sending initial message:", err);
-      });
+    // If no conversation and no ID, redirect to homepage
+    if (!id) {
+      router.push('/');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSentInitial, sendMessage, currentConversation]);
+  }, [currentConversation, messages.length, sendMessage, id, router, initialMessageSent]);
+
+  // Debounced save function to prevent too many API calls
+  const debouncedSave = useCallback((conversation: any) => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set a new timeout
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Don't save for anonymous users with temp IDs
+      if (!user && !conversation.id?.startsWith('local-')) {
+        setIsSaving(false);
+        return;
+      }
+      
+      try {
+        const savedConversation = await saveConversation(conversation);
+        
+        // If this is a new conversation, update the ID
+        if (conversation && !conversation.id && savedConversation.id) {
+          setCurrentConversation(savedConversation);
+        }
+        
+        setMessagesSaved(true);
+      } catch (error) {
+        console.error("Error saving conversation:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 1000); // 1 second debounce
+  }, [user, setCurrentConversation]);
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+  
+  // Save messages to localStorage/server when they change
+  useEffect(() => {
+    // Only save if we have messages and a current conversation
+    if (messages.length === 0 || !currentConversation || isLoadingConversation) return;
     
-    // Save messages to the server when they change
-    if (messages.length > 0 && currentConversation && isAuthenticated) {
-      // Don't save if we're just loading an existing conversation
-      if (isLoadingConversation) return;
-      
-      setIsSaving(true);
-      
-      // Convert AI SDK messages to our format
-      const chatMessages = convertAiMessagesToChat(messages);
-      
-      // Update the current conversation with new messages
-      const updatedConversation = {
-        ...currentConversation,
-        messages: chatMessages,
-        updatedAt: new Date()
-      };
-      
-      // Update the messages in the store
-      updateMessages(chatMessages);
-      
-      // Save to server
-      saveConversation(updatedConversation)
-        .then(savedConversation => {
-          // If this is a new conversation, update the ID
-          if (currentConversation && !currentConversation.id && savedConversation.id) {
-            setCurrentConversation(savedConversation);
-          }
-        })
-        .catch(error => {
-          console.error("Error saving conversation:", error);
-        })
-        .finally(() => {
-          setIsSaving(false);
-        });
+    // Don't save if we just loaded the conversation and haven't made changes
+    if (messagesSaved && status !== 'streaming') return;
+    
+    // Convert AI SDK messages to our format
+    const chatMessages = convertAiMessagesToChat(messages);
+    
+    // Only save if the messages have actually changed
+    const existingMessages = currentConversation.messages || [];
+    if (existingMessages.length === chatMessages.length && 
+        status !== 'streaming' &&
+        JSON.stringify(existingMessages) === JSON.stringify(chatMessages)) {
+      return;
     }
-  }, [messages, currentConversation, isAuthenticated, isLoadingConversation, updateMessages]);
+    
+    setIsSaving(true);
+    
+    // Update the current conversation with new messages
+    const updatedConversation = {
+      ...currentConversation,
+      messages: chatMessages,
+      updatedAt: new Date()
+    };
+    
+    // Update the messages in the store
+    updateMessages(chatMessages);
+    
+    // Debounce the save operation
+    debouncedSave(updatedConversation);
+  }, [
+    messages, 
+    currentConversation, 
+    isLoadingConversation, 
+    updateMessages, 
+    debouncedSave, 
+    messagesSaved,
+    status
+  ]);
+
+  // Cleanup function to cancel any pending timeouts
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Only show loading indicator when status is "submitted" (waiting for AI to start streaming)
   const isLoading = status === "submitted";
@@ -253,20 +271,28 @@ export default function QuizPage() {
         role: "user",
         parts: [{ text: input, type: "text" }],
       });
-      // setInput("");
       inputRef.current?.focus();
+      setMessagesSaved(false);
     } catch (err) {
       console.error("Failed to send message:", err);
       toast.error("Failed to send message. Please try again.");
     }
   };
 
-  const resetQuiz = () => {
+  const resetChat = () => {
+    // Clear any pending save operations
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
     setMessages([]);
     setProducts([]); // Clear products
     setCurrentConversation(null); // Clear current conversation
     setHasSentInitial(false); // Allow initial AI message to be sent again
+    setInitialMessageSent(false); // Reset initial message flag
+    setMessagesSaved(false); // Reset messages saved flag
     toast.success("Chat cleared!");
+    router.push('/');
   };
 
   // Helper function to extract content from message parts
@@ -331,24 +357,46 @@ export default function QuizPage() {
     return false;
   };
 
-  // On form click focous input
+  // On form click focus input
   const handleFormClick = () => {
     inputRef.current?.focus();
   };
 
-  return (
-    <div className="min-h-screen relative px-4">
-      <Navbar />
-        {/* Sidebar for conversation history */}
-        <div className="hidden md:block w-64 pr-4 pt-8 border-r border-foreground/10">
-          <ConversationHistory 
-            onNewChat={resetQuiz} 
-          />
+  // Show loading state while fetching conversation
+  if (isLoadingConversation) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={32} className="animate-spin text-primary" />
+          <p className="text-lg">Loading conversation...</p>
         </div>
-      <div className="max-w-4xl lg:px-4 px-2 w-full mx-auto h-full flex">
-        
-        {/* Main chat area */}
-        <div className="flex-1 pt-8 pb-36">
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full px-4">
+      {!user && !authLoading && (
+        <div className="bg-amber-50 border-amber-200 border rounded-md p-3 mb-4 mt-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>Your conversation will not be saved. <Link href="/signin" className="text-amber-700 hover:underline font-medium">Sign in</Link> to save your chats.</span>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/signin">
+              <Button variant="outline" size="sm">Sign In</Button>
+            </Link>
+            <Link href="/signup">
+              <Button size="sm">Sign Up</Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <div className="relative max-w-4xl w-full mx-auto h-full ">
+        <div className="pt-4 pb-36">
           <div>
             {/* Chat Messages */}
             <Conversation className="mb-6">
@@ -433,10 +481,10 @@ export default function QuizPage() {
             )}
           </div>
         </div>
-        <div className="fixed lg:bottom-2 bottom-4 left-1/2 -translate-x-1/2 w-full mx-auto flex justify-center items-center lg:px-4 px-4 bg-background">
+        <div className="sticky bottom-2 w-full max-w-4xl mx-auto flex justify-center items-center px-4">
           {/* Input Form */}
           <PromptInput
-            className="max-w-4xl w-full p-4"
+            className="w-full p-4 bg-background"
             onSubmit={handleFormSubmit}
             onClick={handleFormClick}
           >
@@ -448,13 +496,13 @@ export default function QuizPage() {
               minHeight={24}
               maxHeight={164}
               autoFocus
-              className="p-0 h-fit "
+              className="p-0 h-fit"
             />
             <PromptInputToolbar>
               <div className="flex items-center justify-end gap-2 w-full">
                 {messages.length > 0 && (
                   <Button
-                    onClick={resetQuiz}
+                    onClick={resetChat}
                     className="cursor-pointer aspect-square h-10 p-2.5 shadow-none w-fit bg-background border border-foreground/20 transition-colors group hover:bg-background"
                   >
                     <Image
@@ -501,15 +549,12 @@ export default function QuizPage() {
       </div>
       
       {/* Loading indicator */}
-      {isSaving && (
+      {isSaving && user && (
         <div className="fixed bottom-20 right-4 bg-primary/10 text-primary px-3 py-1 rounded-md text-sm flex items-center gap-1">
           <Loader2 size={14} className="animate-spin" />
           <span>Saving...</span>
         </div>
       )}
-
-      {/* Top shadow effect */}
-      <div className="fixed max-w-4xl mx-auto top-0 left-1/2 -translate-x-1/2 w-full h-16 bg-gradient-to-b from-white to-transparent"></div>
     </div>
   );
 }

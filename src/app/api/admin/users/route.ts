@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { UserEmail, UserCreateData } from '@/types/admin'
-import bcrypt from 'bcryptjs'
+import { User, UserDTO, UserCreateData } from '@/types/admin'
+import { supabaseAdmin } from '@/lib/supabase'
+import { generateRandomPassword } from '@/lib/utils'
 
 export async function GET() {
   try {
-    const users = await prisma.userEmail.findMany({
+    const users = await prisma.user.findMany({
       orderBy: {
         createdAt: 'desc'
       }
     })
 
     // Transform the data to match frontend expectations
-    const transformedUsers = users.map(user => ({
+    const transformedUsers: UserDTO[] = users.map((user: User) => ({
       id: user.id,
       email: user.email,
       name: user.name,
       is_active: user.isActive, // Convert camelCase to snake_case
       quiz_completed: user.quizCompleted, // Convert camelCase to snake_case
-      unique_link: user.uniqueLink, // Convert camelCase to snake_case
-      user_id: user.userId, // Convert camelCase to snake_case
       role: user.role,
       created_at: user.createdAt.toISOString(), // Convert Date to string
       updated_at: user.updatedAt.toISOString() // Convert Date to string
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
     console.log('validUsers', validUsers)
 
     // Check for existing emails
-    const existingUsers = await prisma.userEmail.findMany({
+    const existingUsers = await prisma.user.findMany({
       where: {
         email: {
           in: validUsers.map(u => u.email)
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     console.log('existingUsers', existingUsers)
 
-    const existingEmails = existingUsers.map(user => user.email)
+    const existingEmails = existingUsers.map((user: { email: string }) => user.email)
     const newUsers = validUsers.filter(user => !existingEmails.includes(user.email))
 
     if (newUsers.length === 0) {
@@ -86,37 +85,51 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const insertedUsers: UserEmail[] = []
+    const insertedUsers: UserDTO[] = []
     const errors: string[] = []
 
     // Process each new user
     for (const userData of newUsers) {
       try {
-        console.log('userData', userData)
-
-        // Generate secure token for direct quiz access
-        const timestamp = Date.now()
-        const secureToken = btoa(`${userData.email}:${timestamp}:${Math.random().toString(36)}`)
+        console.log('Creating user:', userData)
         
-        // Create user record directly with Prisma
-        const userEmail = await prisma.userEmail.create({
+        // Generate a random password for the user
+        const randomPassword = generateRandomPassword()
+        
+        // 1. Create user in Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: userData.email,
+          password: randomPassword,
+          email_confirm: true, // Auto-confirm email
+        })
+        
+        if (authError) {
+          errors.push(`Failed to create auth user for ${userData.email}: ${authError.message}`)
+          continue
+        }
+        
+        // 2. Create user in our database
+        const user = await prisma.user.create({
           data: {
+            id: authData.user.id, // Use Supabase Auth user ID
             email: userData.email,
             name: userData.name,
             isActive: true,
             quizCompleted: false,
-            uniqueLink: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`,
-            role: 'user' // Default role for new users
+            role: 'user'
           }
         })
 
-        console.log('userEmail', userEmail)
+        console.log('User created:', user)
         insertedUsers.push({
-          ...userEmail,
-          is_active: userEmail.isActive,
-          quiz_completed: userEmail.quizCompleted,
-          created_at: userEmail.createdAt.toISOString(),
-          updated_at: userEmail.updatedAt.toISOString()
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          is_active: user.isActive,
+          quiz_completed: user.quizCompleted,
+          role: user.role,
+          created_at: user.createdAt.toISOString(),
+          updated_at: user.updatedAt.toISOString()
         })
 
       } catch (error) {

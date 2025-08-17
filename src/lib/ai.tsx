@@ -16,18 +16,6 @@ export interface Product {
   description?: string;
 }
 
-// Create a global store for products
-interface ProductState {
-  products: Product[];
-  setProducts: (products: Product[]) => void;
-  clearProducts: () => void;
-}
-
-export const useProductStore = create<ProductState>((set) => ({
-  products: [],
-  setProducts: (products) => set({ products }),
-  clearProducts: () => set({ products: [] }),
-}));
 
 type UIPart = { type: "text"; text: string }
 type UIMessage = {
@@ -74,29 +62,29 @@ export async function aiAgent(messages: UIMessage[]) {
         // console.log("Event response", event.response);
         
         // Check if there are tool results with products
-        if (event.toolResults && event.toolResults.length > 0) {
-          for (const toolResult of event.toolResults) {
-            // Check if this is the plan_and_send_routine tool
-            if (toolResult.toolName === 'plan_and_send_routine') {
-              try {
-                const output = toolResult.output;
-                if (output && typeof output === 'object' && 'value' in output) {
-                  const value = output.value as any;
+        // if (event.toolResults && event.toolResults.length > 0) {
+        //   for (const toolResult of event.toolResults) {
+        //     // Check if this is the plan_and_send_routine tool
+        //     if (toolResult.toolName === 'plan_and_send_routine') {
+        //       try {
+        //         const output = toolResult.output;
+        //         if (output && typeof output === 'object' && 'value' in output) {
+        //           const value = output.value as any;
                   
-                  // Check if the output has products
-                  if (value && Array.isArray(value.products) && value.products.length > 0) {
-                    console.log("[AI] Found products in tool response:", value.products);
+        //           // Check if the output has products
+        //           if (value && Array.isArray(value.products) && value.products.length > 0) {
+        //             console.log("[AI] Found products in tool response:", value.products);
                     
-                    // Store products in the global store
-                    useProductStore.getState().setProducts(value.products);
-                  }
-                }
-              } catch (error) {
-                console.error("[AI] Error processing tool result:", error);
-              }
-            }
-          }
-        }
+        //             // Store products in the global store
+        //             // useProductStore.getState().setProducts(value.products);
+        //           }
+        //         }
+        //       } catch (error) {
+        //         console.error("[AI] Error processing tool result:", error);
+        //       }
+        //     }
+        //   }
+        // }
       }
     });
     

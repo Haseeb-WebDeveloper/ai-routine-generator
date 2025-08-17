@@ -12,153 +12,25 @@ export async function middleware(request: NextRequest) {
   console.log('🌐 Full URL:', url.toString())
   console.log('📅 Timestamp:', new Date().toISOString())
 
-  // QUIZ FLOW - Handle direct access from campaign links
-  if (url.pathname === '/quiz') {
-    console.log('🎯 QUIZ PATH DETECTED!')
-    const email = url.searchParams.get('email')
-    const token = url.searchParams.get('token')
-    
-    console.log('📧 Email param:', email)
-    console.log('🔑 Token param:', token)
-    
-    if (email && token) {
-      console.log('✅ Both email and token found, processing authentication...')
-      try {
-        // Validate the secure token and authenticate user
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-
-        // Verify token format and decode
-        const decodedToken = atob(token)
-        const [tokenEmail, timestamp, random] = decodedToken.split(':')
-        
-        // Basic token validation
-        if (tokenEmail !== email) {
-          // Invalid token, redirect to unauthorized
-          return NextResponse.redirect(new URL('/unauthorized', request.url))
-        }
-
-        // Check if token is not too old (24 hours)
-        const tokenAge = Date.now() - parseInt(timestamp)
-        if (tokenAge > 24 * 60 * 60 * 1000) {
-          // Token expired, redirect to unauthorized
-          return NextResponse.redirect(new URL('/unauthorized', request.url))
-        }
-
-        // Get user from database
-        const { data: user, error } = await supabase
-          .from('user_emails')
-          .select('*')
-          .eq('email', email)
-          .eq('is_active', true)
-          .single()
-
-        if (error || !user) {
-          // User not found or inactive, redirect to unauthorized
-          return NextResponse.redirect(new URL('/unauthorized', request.url))
-        }
-
-        // Check if user has an auth account
-        if (!user.user_id) {
-          // No auth account, redirect to unauthorized
-          return NextResponse.redirect(new URL('/unauthorized', request.url))
-        }
-
-        // Get user's auth session using admin client
-        const supabaseAdmin = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        )
-        
-        const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(user.user_id)
-        
-        if (authError || !authUser) {
-          // Auth user not found, redirect to unauthorized
-          return NextResponse.redirect(new URL('/unauthorized', request.url))
-        }
-
-        // Create a custom authenticated session using secure cookies
-        // We'll use the user_id and email to create a secure session
-        const sessionData = {
-          user_id: user.user_id,
-          email: user.email,
-          name: user.name,
-          timestamp: Date.now()
-        }
-        
-        // Create a secure session token
-        const sessionToken = btoa(JSON.stringify(sessionData))
-        
-        // Set authentication cookies and continue to quiz (don't redirect)
-        const response = NextResponse.next()
-        
-        // Set all cookies
-        response.cookies.set('sb-access-token', sessionToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        response.cookies.set('sb-refresh-token', btoa(user.user_id), {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 30 // 30 days
-        })
-        
-        // Set quiz verification cookie to skip validation
-        response.cookies.set('quiz_verified', '1', {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        response.cookies.set('quiz_email', email, {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        response.cookies.set('quiz_user_id', user.user_id, {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        response.cookies.set('quiz_name', user.name, {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-
-        console.log('Setting cookies for user:', { email: user.email, name: user.name, userId: user.user_id })
-        return response
-      } catch (error) {
-        console.error('Error processing quiz authentication:', error)
-        // Error occurred, redirect to unauthorized
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
-      }
+  // Create Supabase client
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      },
     }
-  }
+  )
 
-  // VALIDATE FLOW - Keep existing validation logic for backward compatibility
-  // if (url.pathname === '/validate') {
-  //   console.log('validate pathname')
-  //   const email = url.searchParams.get('email')
-  //   const token = url.searchParams.get('token')
-  //   // If already verified, skip validate page
-  //   const verified = request.cookies.get('quiz_verified')?.value
-  //   const cookieEmail = request.cookies.get('quiz_email')?.value
-  //   if (!email || !token) {
-  //     if (verified === '1' && cookieEmail) {
-  //       const quizUrl = new URL('/quiz', url)
-  //       return NextResponse.redirect(quizUrl)
-  //     }
-  //   }
-  // }
+  // Try to get the session from cookies
+  const { data: { session } } = await supabase.auth.getSession()
 
   // Only apply admin auth to admin routes
   if (url.pathname.startsWith('/admin')) {
@@ -171,26 +43,20 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check for valid admin session
-    const sessionToken = request.cookies.get('admin-session')?.value
-    
-    if (!sessionToken) {
+    if (!session) {
       console.log('❌ No admin session found, redirecting to login')
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
     try {
-      // Validate session token
-      const sessionData = JSON.parse(atob(sessionToken))
-      
-      // Check if session is not expired (7 days)
-      const sessionAge = Date.now() - sessionData.timestamp
-      if (sessionAge > 7 * 24 * 60 * 60 * 1000) {
-        console.log('❌ Admin session expired, redirecting to login')
-        return NextResponse.redirect(new URL('/admin/login', request.url))
-      }
-
       // Check if user has admin role
-      if (sessionData.role !== 'admin') {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (userError || !userData || userData.role !== 'admin') {
         console.log('❌ User is not admin, redirecting to login')
         return NextResponse.redirect(new URL('/admin/login', request.url))
       }
@@ -208,5 +74,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/quiz', '/validate']
+  matcher: ['/admin/:path*', '/validate']
 }

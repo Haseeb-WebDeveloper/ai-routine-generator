@@ -20,12 +20,12 @@ import {
   Users,
   Mail,
 } from "lucide-react";
-import { UserEmail } from "@/types/admin";
 import toast from "react-hot-toast";
+import { User } from "@/types/admin";
 
 export default function UsersTable() {
-  const [users, setUsers] = useState<UserEmail[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserEmail[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -91,8 +91,15 @@ export default function UsersTable() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  // Fix: Accept both string and Date, but always convert to string for new Date()
+  const formatDate = (dateInput: string | Date) => {
+    let date: Date;
+    if (typeof dateInput === "string") {
+      date = new Date(dateInput);
+    } else {
+      date = dateInput;
+    }
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -103,9 +110,9 @@ export default function UsersTable() {
 
   const stats = {
     total: users.length,
-    active: users.filter((u) => u.is_active).length,
-    completed: users.filter((u) => u.quiz_completed).length,
-    pending: users.filter((u) => !u.quiz_completed).length,
+    active: users.filter((u) => u.isActive).length,
+    completed: users.filter((u) => u.quizCompleted).length,
+    pending: users.filter((u) => !u.quizCompleted).length,
   };
 
   if (isLoading) {
@@ -263,35 +270,35 @@ export default function UsersTable() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                user.is_active
+                                user.isActive
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {user.is_active ? "Active" : "Inactive"}
+                              {user.isActive ? "Active" : "Inactive"}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                user.quiz_completed
+                                user.quizCompleted
                                   ? "bg-blue-100 text-blue-800"
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {user.quiz_completed ? "Completed" : "Pending"}
+                              {user.quizCompleted ? "Completed" : "Pending"}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {user.created_at}
+                            {formatDate(user.createdAt)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            {user.unique_link && (
+                            {user.createdAt && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() =>
-                                  copyToClipboard(user.unique_link!)
+                                  copyToClipboard(formatDate(user.createdAt))
                                 }
                               >
                                 <Copy className="h-4 w-4" />
