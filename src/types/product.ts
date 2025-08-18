@@ -47,10 +47,7 @@ export type ProductType =
   | "dry"
   | "normal"
   | "sensitive"              
-  | "asphyxiated"           
-  | "dehydrated"            
   | "mature"                
-  | "acne_prone"            
 
 
   export type SkinConcern =

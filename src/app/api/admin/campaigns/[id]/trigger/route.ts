@@ -315,7 +315,7 @@ export async function POST(
     }
 
     // Get user details for unique links
-    const users = await prisma.userEmail.findMany({
+    const users = await prisma.user.findMany({
       where: {
         email: {
           in: campaign.selectedUsers
@@ -354,9 +354,9 @@ export async function POST(
         console.log(`✅ Email sent successfully to: ${user.email}`)
 
         // Update user's unique link in database
-        await prisma.userEmail.update({
+        await prisma.user.update({
           where: { id: user.id },
-          data: { uniqueLink: directQuizLink }
+          data: { quizCompleted: true }
         })
 
       } catch (error) {

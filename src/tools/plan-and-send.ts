@@ -82,7 +82,7 @@ export const planAndSendRoutine = tool({
         .string()
         .optional()
         .describe(
-          "User's skin type (oily, dry, combination, sensitive, normal, etc.)"
+          "User's skin type (oily, dry, combination, normal, sensitive, mature)"
         ),
       skinConcerns: z
         .array(z.string())
@@ -221,16 +221,15 @@ export const planAndSendRoutine = tool({
         ## REQUIRED OUTPUT FORMAT:
         Your Personalized Skincare Routine by **Dr. Lavera**
 
-        **What I noticed about your skin:**
+        ###What I noticed about your skin:
         [Personal observations about their skin type and concerns]
 
         ## Your Morning Routine ☀️
-
-        ### Product Name
+        **Product Name** 
         **Why**: Your skin needs this because...
         **How**: Just [simple instruction]
 
-        ### Product Name  
+        **Product Name** 
         **Why**: Your skin needs this because...
         **How**: Just [simple instruction]
 

@@ -57,11 +57,12 @@ const migrateProductType = (oldType) => {
 
 const migrateSkinType = (oldType) => {
   const typeMap = {
-    'DRY': 'DRY',
     'OILY': 'OILY',
     'COMBINATION': 'COMBINATION',
+    'DRY': 'DRY',
+    'NORMAL': 'NORMAL',
     'SENSITIVE': 'SENSITIVE',
-    'NORMAL': 'NORMAL'
+    'MATURE': 'MATURE'
   }
   
   return typeMap[oldType] || 'NORMAL'

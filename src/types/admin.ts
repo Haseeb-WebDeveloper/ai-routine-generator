@@ -1,12 +1,20 @@
-export interface UserEmail {
+export interface User {
   id: string
   email: string
   name: string | null
-  passwordHash?: string | null
+  isActive: boolean
+  quizCompleted: boolean
+  role?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface UserDTO {
+  id: string
+  email: string
+  name: string | null
   is_active: boolean
   quiz_completed: boolean
-  unique_link?: string | null
-  user_id?: string | null
   role?: string | null
   created_at: string
   updated_at: string

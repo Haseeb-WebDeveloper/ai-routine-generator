@@ -213,10 +213,7 @@ export const mapToPrismaSkinTypes = (skinTypes: string[]): PrismaSkinType[] => {
     'dry': 'DRY',
     'normal': 'NORMAL',
     'sensitive': 'SENSITIVE',
-    'asphyxiated': 'ASPHYXIATED',
-    'dehydrated': 'DEHYDRATED',
     'mature': 'MATURE',
-    'acne_prone': 'ACNE_PRONE'
   }
   
   return skinTypes.map(t => {
@@ -277,16 +274,23 @@ export const mapToPrismaTexture = (texture: string): PrismaTexture => {
   return mapped
 }
 
-export const mapToPrismaAgeRange = (age: number): PrismaAgeRange => {
-  if (age >= 0 && age <= 1) return 'AGE_0_1'
-  if (age >= 1 && age <= 3) return 'AGE_1_3'
-  if (age >= 4 && age <= 12) return 'AGE_4_12'
-  if (age >= 13 && age <= 17) return 'AGE_13_17'
-  if (age >= 18 && age <= 25) return 'AGE_18_25'
-  if (age >= 26 && age <= 35) return 'AGE_26_35'
-  if (age >= 36 && age <= 45) return 'AGE_36_45'
-  if (age >= 46 && age <= 60) return 'AGE_46_60'
-  if (age >= 60) return 'AGE_60_PLUS'
+export const mapToPrismaAgeRange = (age: string): PrismaAgeRange => {
+  // Map string age ranges to Prisma enum values
+  const ageMap: Record<string, PrismaAgeRange> = {
+    '0-1': 'AGE_0_1',
+    '1-3': 'AGE_1_3',
+    '4-12': 'AGE_4_12',
+    '13-17': 'AGE_13_17',
+    '18-25': 'AGE_18_25',
+    '26-35': 'AGE_26_35',
+    '36-45': 'AGE_36_45',
+    '46-60': 'AGE_46_60',
+    '60+': 'AGE_60_PLUS'
+  }
   
-  throw new Error(`Invalid age: ${age}. Age must be a positive number.`)
+  const mapped = ageMap[age]
+  if (!mapped) {
+    throw new Error(`Invalid age range: ${age}. Valid age ranges: ${Object.keys(ageMap).join(', ')}`)
+  }
+  return mapped
 }

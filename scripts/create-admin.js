@@ -4,12 +4,29 @@ import { PrismaClient } from '@prisma/client'
 import readline from 'readline'
 import dotenv from 'dotenv'
 import bcrypt from 'bcryptjs'
+import { createClient } from '@supabase/supabase-js'
 
 // Load environment variables
 dotenv.config({ path: '.env' })
 
 // Create Prisma client
 const prisma = new PrismaClient()
+
+// Create Supabase admin client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing Supabase environment variables')
+  process.exit(1)
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+})
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -59,8 +76,8 @@ async function createAdminUser() {
     
     console.log('\n🔄 Creating admin account...')
     
-    // Check if user already exists
-    const existingUser = await prisma.userEmail.findUnique({
+    // Check if user already exists in Prisma
+    const existingUser = await prisma.user.findUnique({
       where: { email }
     })
     
@@ -75,7 +92,7 @@ async function createAdminUser() {
       
       const updateRole = await question('Update existing user to admin role? (y/n): ')
       if (updateRole.toLowerCase() === 'y') {
-        await prisma.userEmail.update({
+        await prisma.user.update({
           where: { email },
           data: { role: 'admin' }
         })
@@ -89,20 +106,53 @@ async function createAdminUser() {
       }
     }
     
-    // Hash password
+    // Check if user exists in Supabase
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers()
+    
+    let supabaseUser = null
+    if (data && data.users) {
+      supabaseUser = data.users.find(user => user.email === email)
+    }
+    
+    let userId = null
+    
+    // Create user in Supabase if not exists
+    if (!supabaseUser) {
+      console.log('📝 Creating user in Supabase Auth...')
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name, role: 'admin' }
+      })
+      
+      if (createError) {
+        console.error('❌ Error creating Supabase user:', createError.message)
+        rl.close()
+        return
+      }
+      
+      userId = newUser.user.id
+      console.log('✅ Supabase user created successfully')
+    } else {
+      userId = supabaseUser.id
+      console.log('✅ User already exists in Supabase Auth')
+    }
+    
+    // Hash password for Prisma DB
     const saltRounds = 12
     const passwordHash = await bcrypt.hash(password, saltRounds)
     
-    // Create new admin user
-    const newAdmin = await prisma.userEmail.create({
+    // Create new admin user in Prisma
+    const newAdmin = await prisma.user.create({
       data: {
+        id: userId, // Use Supabase user ID
         email,
         name: name.trim(),
         passwordHash,
         role: 'admin',
         isActive: true,
-        quizCompleted: false,
-        uniqueLink: null
+        quizCompleted: false
       }
     })
     

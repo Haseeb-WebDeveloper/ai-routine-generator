@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,9 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Package, DollarSign, Star, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, DollarSign, Star, Users, Upload, Download, FileText, Save, X, Check, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { IProduct, BudgetRange, Gender, ProductType, AgeRange, Category, Texture } from '@/types/product'
+import { IProduct, BudgetRange, Gender, ProductType, AgeRange, Category, Texture, SkinType, SkinConcern, UseTime } from '@/types/product'
 import { PRODUCT_TYPES, SKIN_TYPES, SKIN_CONCERNS, GENDERS, BUDGETS, TEXTURES, USE_TIMES, CATEGORIES, AGE_RANGES } from '@/constants/product'
 
 
@@ -26,7 +26,13 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [csvData, setCsvData] = useState<any[]>([])
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [csvErrors, setCsvErrors] = useState<string[]>([])
+  const [isProcessingCsv, setIsProcessingCsv] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState<IProduct>({
     name: '',
     brand: '',
@@ -171,6 +177,489 @@ export default function Products() {
     setEditingProduct(null)
   }
 
+  const handleCsvFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      setIsProcessingCsv(true)
+      setCsvErrors([])
+      
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string
+          const result = parseCsvData(text)
+          setCsvHeaders(result.headers)
+          setCsvData(result.data)
+          validateCsvData(result.data)
+        } catch (error) {
+          setCsvErrors([`Failed to parse CSV file: ${error instanceof Error ? error.message : String(error)}`])
+          setCsvData([])
+          setCsvHeaders([])
+        } finally {
+          setIsProcessingCsv(false)
+        }
+      }
+      
+      reader.onerror = () => {
+        setCsvErrors(['Failed to read the file'])
+        setIsProcessingCsv(false)
+      }
+      
+      reader.readAsText(file)
+    } else {
+      toast.error('Please select a valid CSV file')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+  
+  const parseCsvData = (csvText: string) => {
+    const lines = csvText.split('\n')
+    const headers = lines[0].split(',').map(header => header.trim())
+    
+    // Validate required headers
+    const requiredHeaders = ['name', 'brand', 'type', 'gender', 'age', 'budget', 'category', 'texture', 'price', 'instructions']
+    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h))
+    
+    if (missingHeaders.length > 0) {
+      throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`)
+    }
+    
+    const data = []
+    
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue
+      
+      // Handle quoted fields with commas inside them
+      let values: string[] = []
+      let currentLine = lines[i]
+      
+      // Parse CSV line handling quoted values with commas
+      let inQuotes = false
+      let currentValue = ''
+      
+      for (let j = 0; j < currentLine.length; j++) {
+        const char = currentLine[j]
+        
+        if (char === '"' && (j === 0 || currentLine[j-1] !== '\\')) {
+          inQuotes = !inQuotes
+        } else if (char === ',' && !inQuotes) {
+          values.push(currentValue.trim())
+          currentValue = ''
+        } else {
+          currentValue += char
+        }
+      }
+      
+      // Add the last value
+      values.push(currentValue.trim())
+      
+      // Clean up quotes from values
+      values = values.map(v => v.replace(/^"|"$/g, ''))
+      
+      const row: Record<string, any> = {}
+      
+      headers.forEach((header, index) => {
+        // Handle array values that might be in format "value1,value2" or comma-separated list
+        if (['use_time', 'skin_types', 'skin_concerns'].includes(header)) {
+          let arrayValue = values[index] || ''
+          
+          // If it looks like a JSON array, try to parse it
+          if (arrayValue.startsWith('[') && arrayValue.endsWith(']')) {
+            try {
+              row[header] = JSON.parse(arrayValue)
+            } catch {
+              // If parsing fails, fall back to comma splitting
+              arrayValue = arrayValue.replace(/^\[|\]$/g, '').trim()
+              row[header] = arrayValue ? arrayValue.split(',').map(v => v.trim()) : []
+            }
+          } else {
+            // Simple comma or semicolon-separated list
+            const separator = arrayValue.includes(';') ? ';' : ','
+            row[header] = arrayValue ? arrayValue.split(separator).map(v => v.trim()) : []
+          }
+          
+          // Validate use_time values against USE_TIMES
+          if (header === 'use_time') {
+            row[header] = row[header].filter((time: string) => USE_TIMES.includes(time as UseTime))
+          }
+        } 
+        // Handle boolean values
+        else if (['fragrance_free', 'alcohol_free'].includes(header)) {
+          const value = values[index]?.toLowerCase()
+          row[header] = value === 'true' || value === 'yes' || value === '1'
+        }
+        // Handle numeric values
+        else if (header === 'price') {
+          row[header] = parseFloat(values[index] || '0')
+        }
+        // Handle ingredients as array of objects
+        else if (header === 'ingredients') {
+          try {
+            let ingredientsStr = values[index] || ''
+            
+            // If it looks like a JSON array, try to parse it
+            if (ingredientsStr.startsWith('[') && ingredientsStr.endsWith(']')) {
+              try {
+                row[header] = JSON.parse(ingredientsStr)
+              } catch {
+                row[header] = []
+              }
+            } else {
+              // Parse format like "name1:function1;name2:function2" or with commas
+              const separator = ingredientsStr.includes(';') ? ';' : ','
+              const ingredients = ingredientsStr.split(separator).map(item => {
+                const [name, func] = item.split(':').map(part => part.trim())
+                return { name, function: func || '' }
+              }).filter(item => item.name) // Filter out empty items
+              
+              row[header] = ingredients
+            }
+          } catch {
+            row[header] = []
+          }
+        }
+        // Handle regular string values
+        else {
+          row[header] = values[index] || ''
+        }
+      })
+      
+      data.push(row)
+    }
+    
+    return { headers, data }
+  }
+  
+  const validateCsvData = (data: any[]) => {
+    const errors: string[] = []
+    
+    data.forEach((row, index) => {
+      // Check required fields
+      if (!row.name) errors.push(`Row ${index + 1}: Product name is required`)
+      if (!row.brand) errors.push(`Row ${index + 1}: Brand is required`)
+      if (!row.instructions) errors.push(`Row ${index + 1}: Instructions are required`)
+      
+      // Validate product type
+      if (!row.type || !PRODUCT_TYPES.includes(row.type)) {
+        errors.push(`Row ${index + 1}: Invalid product type: ${row.type}. Must be one of: ${PRODUCT_TYPES.join(', ')}`)
+      }
+      
+      // Validate gender
+      if (!row.gender || !GENDERS.includes(row.gender)) {
+        errors.push(`Row ${index + 1}: Invalid gender: ${row.gender}. Must be one of: ${GENDERS.join(', ')}`)
+      }
+      
+      // Validate age range
+      if (!row.age || !AGE_RANGES.includes(row.age)) {
+        errors.push(`Row ${index + 1}: Invalid age range: ${row.age}. Must be one of: ${AGE_RANGES.join(', ')}`)
+      }
+      
+      // Validate budget
+      if (!row.budget || !BUDGETS.includes(row.budget)) {
+        errors.push(`Row ${index + 1}: Invalid budget: ${row.budget}. Must be one of: ${BUDGETS.join(', ')}`)
+      }
+      
+      // Validate category
+      if (!row.category || !CATEGORIES.includes(row.category)) {
+        errors.push(`Row ${index + 1}: Invalid category: ${row.category}. Must be one of: ${CATEGORIES.join(', ')}`)
+      }
+      
+      // Validate texture
+      if (!row.texture || !TEXTURES.includes(row.texture)) {
+        errors.push(`Row ${index + 1}: Invalid texture: ${row.texture}. Must be one of: ${TEXTURES.join(', ')}`)
+      }
+      
+      // Validate use_time values
+      if (row.use_time && Array.isArray(row.use_time)) {
+        if (row.use_time.length === 0) {
+          errors.push(`Row ${index + 1}: At least one use time is required`)
+        } else {
+          row.use_time.forEach((time: string) => {
+            if (!USE_TIMES.includes(time as UseTime)) {
+              errors.push(`Row ${index + 1}: Invalid use time: ${time}. Must be one of: ${USE_TIMES.join(', ')}`)
+            }
+          })
+        }
+      } else {
+        errors.push(`Row ${index + 1}: Use time must be an array`)
+      }
+      
+      // Validate skin_types values
+      if (row.skin_types && Array.isArray(row.skin_types)) {
+        if (row.skin_types.length === 0) {
+          errors.push(`Row ${index + 1}: At least one skin type is required`)
+        } else {
+          row.skin_types.forEach((type: string) => {
+            if (!SKIN_TYPES.includes(type as SkinType)) {
+              errors.push(`Row ${index + 1}: Invalid skin type: ${type}. Must be one of: ${SKIN_TYPES.join(', ')}`)
+            }
+          })
+        }
+      } else {
+        errors.push(`Row ${index + 1}: Skin types must be an array`)
+      }
+      
+      // Validate skin_concerns values
+      if (row.skin_concerns && Array.isArray(row.skin_concerns)) {
+        if (row.skin_concerns.length === 0) {
+          errors.push(`Row ${index + 1}: At least one skin concern is required`)
+        } else {
+          row.skin_concerns.forEach((concern: string) => {
+            if (!SKIN_CONCERNS.includes(concern as SkinConcern)) {
+              errors.push(`Row ${index + 1}: Invalid skin concern: ${concern}. Must be one of: ${SKIN_CONCERNS.join(', ')}`)
+            }
+          })
+        }
+      } else {
+        errors.push(`Row ${index + 1}: Skin concerns must be an array`)
+      }
+      
+      // Validate ingredients
+      if (row.ingredients) {
+        if (!Array.isArray(row.ingredients)) {
+          errors.push(`Row ${index + 1}: Ingredients must be an array`)
+        } else if (row.ingredients.length === 0) {
+          // Empty ingredients array is allowed, but we'll warn about it
+          console.warn(`Row ${index + 1}: No ingredients provided`)
+        } else {
+          // Check that each ingredient has name and function
+          row.ingredients.forEach((ingredient: any, i: number) => {
+            if (!ingredient.name) {
+              errors.push(`Row ${index + 1}: Ingredient ${i + 1} is missing a name`)
+            }
+            if (!ingredient.function) {
+              errors.push(`Row ${index + 1}: Ingredient ${i + 1} is missing a function`)
+            }
+          })
+        }
+      }
+      
+      // Validate price is a number
+      if (isNaN(row.price)) {
+        errors.push(`Row ${index + 1}: Price must be a number`)
+      }
+    })
+    
+    setCsvErrors(errors)
+    return errors.length === 0
+  }
+  
+  const handleCsvDataChange = (rowIndex: number, header: string, value: string) => {
+    const newData = [...csvData]
+    
+    // Handle special cases based on header type
+    if (['use_time', 'skin_types', 'skin_concerns'].includes(header)) {
+      // For array values, split by comma or semicolon
+      const separator = value.includes(';') ? ';' : ','
+      newData[rowIndex][header] = value.split(separator).map(v => v.trim()).filter(Boolean)
+    } else if (['fragrance_free', 'alcohol_free'].includes(header)) {
+      // For boolean values
+      const lowerValue = value.toLowerCase()
+      newData[rowIndex][header] = lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1'
+    } else if (header === 'price') {
+      // For numeric values
+      newData[rowIndex][header] = parseFloat(value) || 0
+    } else if (header === 'ingredients') {
+      try {
+        // Try to parse as JSON if it looks like JSON
+        if (value.trim().startsWith('[')) {
+          newData[rowIndex][header] = JSON.parse(value)
+        } else {
+          // Parse simple format: name1:function1;name2:function2 (or with commas)
+          const separator = value.includes(';') ? ';' : ','
+          const ingredients = value.split(separator).map(item => {
+            const [name, func] = item.split(':').map(part => part.trim())
+            return { name, function: func || '' }
+          }).filter(item => item.name) // Filter out empty items
+          
+          newData[rowIndex][header] = ingredients
+        }
+      } catch {
+        // Keep as string if parsing fails
+        newData[rowIndex][header] = value
+      }
+    } else {
+      // For regular string values
+      newData[rowIndex][header] = value
+    }
+    
+    setCsvData(newData)
+    validateCsvData(newData)
+  }
+  
+  const handleBulkUpload = async () => {
+    if (csvData.length === 0) return
+    
+    // Validate data before upload
+    if (validateCsvData(csvData)) {
+      setIsProcessingCsv(true)
+      
+      try {
+        // Convert CSV data to product format
+        const productsToUpload = csvData.map(row => {
+          // Ensure all arrays are properly formatted
+          const use_time = Array.isArray(row.use_time) ? row.use_time : []
+          const skin_types = Array.isArray(row.skin_types) ? row.skin_types : []
+          const skin_concerns = Array.isArray(row.skin_concerns) ? row.skin_concerns : []
+          
+          // Ensure ingredients is an array of objects with name and function
+          let ingredients = []
+          if (Array.isArray(row.ingredients)) {
+            ingredients = row.ingredients.map((ing: any) => {
+              if (typeof ing === 'string') {
+                // If it's a string, try to parse as "name:function"
+                const [name, func] = ing.split(':').map(part => part.trim())
+                return { name: name || '', function: func || '' }
+              } else if (typeof ing === 'object' && ing !== null) {
+                // If it's already an object, ensure it has name and function
+                return {
+                  name: ing.name || '',
+                  function: ing.function || ''
+                }
+              }
+              return { name: '', function: '' }
+            }).filter((ing: any) => ing.name) // Filter out empty ingredients
+          }
+          
+          const product: IProduct = {
+            name: row.name,
+            brand: row.brand,
+            type: row.type as ProductType,
+            gender: row.gender as Gender,
+            age: row.age as AgeRange,
+            budget: row.budget as BudgetRange,
+            category: row.category as Category,
+            use_time: use_time as UseTime[],
+            skin_types: skin_types as SkinType[],
+            skin_concerns: skin_concerns as SkinConcern[],
+            ingredients: ingredients,
+            texture: row.texture as Texture,
+            fragrance_free: Boolean(row.fragrance_free),
+            alcohol_free: Boolean(row.alcohol_free),
+            instructions: row.instructions,
+            price: parseFloat(row.price) || 0,
+            purchase_link: row.purchase_link || '',
+            image_url: row.image_url || ''
+          }
+          return product
+        })
+        
+        // Send to API endpoint
+        const response = await fetch('/api/admin/products/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: productsToUpload })
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok) {
+          toast.success(`Successfully uploaded ${result.added} products`)
+          setCsvData([])
+          setCsvHeaders([])
+          setCsvErrors([])
+          setShowBulkUpload(false)
+          await loadProducts()
+        } else {
+          toast.error(result.error || 'Failed to upload products')
+        }
+      } catch (error) {
+        console.error('Error during bulk upload:', error)
+        toast.error('Failed to process bulk upload')
+      } finally {
+        setIsProcessingCsv(false)
+      }
+    } else {
+      toast.error('Please fix the validation errors before uploading')
+    }
+  }
+  
+    const downloadProductTemplate = () => {
+    // Create a template with all required fields and examples
+    const headers = [
+      'name',
+      'brand',
+      'type',
+      'gender',
+      'age',
+      'budget',
+      'category',
+      'use_time',
+      'skin_types',
+      'skin_concerns',
+      'texture',
+      'fragrance_free',
+      'alcohol_free',
+      'ingredients',
+      'price',
+      'purchase_link',
+      'image_url',
+      'instructions'
+    ].join(',')
+    
+    // Example row 1
+    const exampleRow1 = [
+      'Gentle Hydrating Cleanser',
+      'CeraVe',
+      'cleanser',
+      'unisex',
+      '18-25',
+      'budgetFriendly',
+      'core',
+      'morning;night',
+      'dry;sensitive',
+      'dryness;sensitivity',
+      'cream',
+      'true',
+      'true',
+      'Ceramides:Hydration;Hyaluronic Acid:Moisture',
+      '12.99',
+      'https://example.com/product',
+      'https://example.com/image.jpg',
+      'Apply to damp skin massage gently rinse thoroughly.'
+    ].join(',')
+    
+    // Example row 2
+    const exampleRow2 = [
+      'Vitamin C Brightening Serum',
+      'The Ordinary',
+      'vitaminC',
+      'unisex',
+      '26-35',
+      'midRange',
+      'treatment',
+      'morning',
+      'combination;normal',
+      'dullness;hyperpigmentation',
+      'gel',
+      'true',
+      'true',
+      'Vitamin C:Brightening;Ferulic Acid:Antioxidant',
+      '6.99',
+      'https://example.com/product2',
+      'https://example.com/image2.jpg',
+      'Apply a few drops to clean skin in the morning before moisturizer.'
+    ].join(',')
+    
+    // Add a comment line explaining the format
+    const comment = '# IMPORTANT: For arrays (use_time, skin_types, skin_concerns), use SEMICOLONS (;) as separators, not commas. For ingredients, use format "name:function;name2:function2". See product_csv_guide.md for full documentation.'
+    
+    const csvContent = `${comment}\n${headers}\n${exampleRow1}\n${exampleRow2}`
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'product_template.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
   const handleArrayChange = (field: keyof IProduct, value: string, checked: boolean) => {
     const currentArray = formData[field] as string[]
     if (checked) {
@@ -217,11 +706,163 @@ export default function Products() {
           <h2 className="text-2xl font-bold text-gray-900">Skincare Products</h2>
           <p className="text-gray-600">Manage your product database</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => {
+            setShowBulkUpload(true)
+            setShowForm(false)
+          }}>
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
+          </Button>
+          <Button onClick={() => {
+            setShowForm(true)
+            setShowBulkUpload(false)
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
       </div>
+
+      {showBulkUpload && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Upload Products</CardTitle>
+            <CardDescription>
+              Upload a CSV file containing product data to import multiple products at once.
+              You can edit the data before finalizing the import.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {csvData.length === 0 ? (
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvFileSelect}
+                    className="hidden"
+                    disabled={isProcessingCsv}
+                  />
+                  
+                  <div className="space-y-4">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isProcessingCsv}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Select CSV File
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      or drag and drop a CSV file here
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={downloadProductTemplate}
+                      disabled={isProcessingCsv}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Template
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open('/product_csv_guide.md', '_blank')}
+                      disabled={isProcessingCsv}
+                    >
+                      View CSV Guide
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {csvErrors.length > 0 && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <div className="ml-2">
+                      <h4 className="text-sm font-medium text-red-800">Validation Errors</h4>
+                      <ul className="text-sm text-red-700 list-disc pl-5">
+                        {csvErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Alert>
+                )}
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        {csvHeaders.map((header, index) => (
+                          <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvData.map((row, rowIndex) => (
+                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {csvHeaders.map((header, colIndex) => (
+                            <td key={`${rowIndex}-${colIndex}`} className="px-4 py-2 text-sm text-gray-900">
+                              <input
+                                type="text"
+                                className="w-full border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded p-1"
+                                value={row[header] || ''}
+                                onChange={(e) => handleCsvDataChange(rowIndex, header, e.target.value)}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="flex justify-between mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCsvData([])
+                      setCsvHeaders([])
+                      setCsvErrors([])
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ''
+                      }
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleBulkUpload}
+                    disabled={isProcessingCsv || csvErrors.length > 0}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isProcessingCsv ? 'Uploading...' : 'Save All Products'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {showForm && (
         <Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { XCircle, Settings } from "lucide-react";
@@ -29,7 +29,8 @@ import { Response } from "@/components/ai-elements/response";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([
+  ]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [hasSentInitial, setHasSentInitial] = useState(false);
@@ -96,33 +97,55 @@ export default function QuizPage() {
 
   // Extract products from messages
   useEffect(() => {
-    if (messages.length === 0) return;
+    if (messages.length === 0) {
+      console.log("[QuizPage] No messages yet");
+      return;
+    }
+
+    console.log("[QuizPage] Processing messages:", messages.length, "messages");
 
     // Find the most recent assistant message
     const assistantMessages = messages.filter(
       (msg) => msg.role === "assistant"
     );
-    if (assistantMessages.length === 0) return;
+    if (assistantMessages.length === 0) {
+      console.log("[QuizPage] No assistant messages found");
+      return;
+    }
 
+    console.log("[QuizPage] Found", assistantMessages.length, "assistant messages");
     const lastMessage = assistantMessages[assistantMessages.length - 1];
+    console.log("[QuizPage] Last message:", lastMessage);
 
     // Check if this message has parts
-    if (!Array.isArray(lastMessage.parts)) return;
+    if (!Array.isArray(lastMessage.parts)) {
+      console.log("[QuizPage] Message has no parts array");
+      return;
+    }
+
+    console.log("[QuizPage] Message parts:", lastMessage.parts);
 
     // Look for tool output with products
     for (const part of lastMessage.parts as any[]) {
-      if (
-        part.type?.startsWith("tool-plan_and_send_routine") &&
-        part.state === "output-available" &&
-        part.output &&
-        Array.isArray(part.output.products)
-      ) {
-        console.log(
-          "[QuizPage] Found products in message:",
-          part.output.products
-        );
-        setProducts(part.output.products);
-        break;
+      console.log("[QuizPage] Checking part:", part.type, part.state);
+      
+      if (part.type?.startsWith("tool-plan_and_send_routine")) {
+        console.log("[QuizPage] Found plan_and_send_routine part:", part);
+        
+        if (part.state === "output-available" && part.output) {
+          console.log("[QuizPage] Tool output available:", part.output);
+          
+          if (Array.isArray(part.output.products)) {
+            console.log(
+              "[QuizPage] Found products in message:",
+              part.output.products
+            );
+            setProducts(part.output.products);
+            break;
+          } else {
+            console.log("[QuizPage] No products array in output:", part.output);
+          }
+        }
       }
     }
   }, [messages]);
@@ -160,6 +183,11 @@ export default function QuizPage() {
   const isLoading = status === "submitted";
   // Show streaming state (AI is responding, so don't show loading indicator)
   const isStreaming = status === "streaming";
+  
+  // Debug products state
+  useEffect(() => {
+    console.log("[QuizPage] Products state updated:", products);
+  }, [products]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,37 +305,58 @@ export default function QuizPage() {
                   const content = extractMessageContent(message);
                   const isToolActive = hasActiveTool(message);
                   const toolName = getToolDisplayName(message);
+                  
+                  // Check if this is the last assistant message and products are available
+                  const assistantMessages = messages.filter(m => m.role === "assistant");
+                  const lastAssistantMessageId = assistantMessages.length > 0 ? 
+                    assistantMessages[assistantMessages.length - 1].id : null;
+                  const isLastAssistantMessage = 
+                    message.role === "assistant" && 
+                    message.id === lastAssistantMessageId;
+                  
+                  // Debug info
+                  if (message.role === "assistant") {
+                    console.log("[QuizPage] Assistant message:", message.id, 
+                      "isLast:", message.id === lastAssistantMessageId,
+                      "products:", products.length)
+                  }
 
                   return (
-                    <div
-                      key={message.id || index}
-                      className={`flex ${
-                        message.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      } mb-4`}
-                    >
+                    <React.Fragment key={message.id || index}>
                       <div
-                        className={`lg:max-w-[80%] max-w-[95%] py-3 border-b border-foreground/20`}
+                        className={`flex ${
+                          message.role === "user"
+                            ? "justify-end"
+                            : "justify-start"
+                        } mb-4`}
                       >
-                        {/* Show tool execution indicator */}
-                        {isToolActive && (
-                          <div className="flex items-center gap-2 mb-2 text-foreground">
-                            <Settings className="h-4 w-4 animate-spin" />
-                            <span className="text-sm font-medium">
-                              {toolName}
-                            </span>
-                          </div>
-                        )}
+                        <div
+                          className={`lg:max-w-[80%] max-w-[95%] py-3 border-b border-foreground/20`}
+                        >
+                          {/* Show tool execution indicator */}
+                          {isToolActive && (
+                            <div className="flex items-center gap-2 mb-2 text-foreground">
+                              <Settings className="h-4 w-4 animate-spin" />
+                              <span className="text-sm font-medium">
+                                {toolName}
+                              </span>
+                            </div>
+                          )}
 
-                        {/* Show message content */}
-                        {content && (
-                          <Response className="whitespace-pre-wrap">
-                            {content}
-                          </Response>
-                        )}
+                          {/* Show message content */}
+                          {content && (
+                            <Response className="whitespace-pre-wrap">
+                              {content}
+                            </Response>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                      
+                      {/* Show products immediately after the last assistant message */}
+                      {isLastAssistantMessage && products.length > 0 && (
+                        <ProductDisplay products={products} />
+                      )}
+                    </React.Fragment>
                   );
                 })}
 
@@ -327,9 +376,6 @@ export default function QuizPage() {
               </ConversationContent>
               <ConversationScrollButton />
             </Conversation>
-
-            {/* Products Display */}
-            <ProductDisplay products={products} />
 
             {/* Error Display */}
             {chatError && (

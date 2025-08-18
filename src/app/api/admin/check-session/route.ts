@@ -16,12 +16,12 @@ export async function GET(request: NextRequest) {
     // Decode and validate session token
     try {
       const sessionData = JSON.parse(atob(sessionToken))
-      console.log('🔍 Session data:', { 
-        userId: sessionData.userId, 
-        email: sessionData.email, 
-        role: sessionData.role,
-        timestamp: sessionData.timestamp 
-      })
+      // console.log('🔍 Session data:', { 
+      //   userId: sessionData.userId, 
+      //   email: sessionData.email, 
+      //   role: sessionData.role,
+      //   timestamp: sessionData.timestamp 
+      // })
       
       // Check if session is not expired (7 days)
       const sessionAge = Date.now() - sessionData.timestamp

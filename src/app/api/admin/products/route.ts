@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         brand: body.brand,
         type: mapToPrismaProductType(body.type),
         gender: mapToPrismaGender(body.gender),
-        age: mapToPrismaAgeRange(parseInt(body.age.split('-')[0])),
+        age: mapToPrismaAgeRange(body.age),
         budget: mapToPrismaBudgetRange(body.budget),
         category: mapToPrismaCategory(body.category),
         useTime: mapToPrismaUseTime(body.use_time),

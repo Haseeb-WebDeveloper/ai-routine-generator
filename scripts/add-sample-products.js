@@ -121,10 +121,7 @@ const mapSkinTypes = (skinTypes) => {
     'dry': 'DRY',
     'normal': 'NORMAL',
     'sensitive': 'SENSITIVE',
-    'asphyxiated': 'ASPHYXIATED',
-    'dehydrated': 'DEHYDRATED',
     'mature': 'MATURE',
-    'acne_prone': 'ACNE_PRONE'
   }
   
   return skinTypes.map(t => {
@@ -327,7 +324,7 @@ const comprehensiveProducts = [
     budget: "budgetFriendly",
     category: "treatment",
     use_time: ["morning", "night"],
-    skin_types: ["oily", "combination", "acne_prone"],
+    skin_types: ["oily", "combination"],
     skin_concerns: ["acne", "pores", "oiliness"],
     ingredients: [
       { name: "Niacinamide", function: "Oil Control" },
@@ -446,7 +443,7 @@ const comprehensiveProducts = [
     budget: "midRange",
     category: "special",
     use_time: ["night"],
-    skin_types: ["oily", "combination", "acne_prone"],
+    skin_types: ["oily", "combination"],
     skin_concerns: ["acne", "blackheads", "pores"],
     ingredients: [
       { name: "White China Clay", function: "Oil Absorption" },
@@ -492,7 +489,7 @@ const comprehensiveProducts = [
     budget: "Premium",
     category: "special",
     use_time: ["night"],
-    skin_types: ["acne_prone", "oily", "combination"],
+    skin_types: ["oily", "combination"],
     skin_concerns: ["acne", "blackheads"],
     ingredients: [
       { name: "Salicylic Acid", function: "BHA Treatment" },
