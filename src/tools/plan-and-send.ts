@@ -33,6 +33,7 @@ interface ToolProfile {
   email: string;
   budget?: string;
   currentRoutine?: string;
+  userFullInformation?: string;
 }
 
 // Enhanced normalizers
@@ -116,13 +117,19 @@ export const planAndSendRoutine = tool({
         .string()
         .optional()
         .describe("User's skincare budget range (budgetFriendly, midRange, Premium)"),
+        currentRoutine: z
+          .string()
+          .optional()
+          .describe("User's current skincare routine"),
       email: z
         .string()
         .describe("User's email address for sending the routine"),
-      currentRoutine: z
+      userFullInformation: z
         .string()
         .optional()
-        .describe("User's current skincare routine"),
+        .describe(
+          "Summarize the most important details you know about the user in 2-3 simple sentences. Focus on facts that help us choose the best skincare routine for them (like their main concerns, allergies, preferences, or goals etc). Make it clear and easy to understand, as if you are explaining the user's needs to another skincare expert."
+        ),
     })
     .describe(
       "Complete user profile for personalized skincare routine generation"
@@ -249,6 +256,7 @@ export const planAndSendRoutine = tool({
           allergies: profile.allergies,
           budget,
           currentRoutine,
+          otherInformation: profile.userFullInformation,
         },
         null,
         2
