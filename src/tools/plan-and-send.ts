@@ -1,16 +1,16 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
 import { cohere } from "@ai-sdk/cohere";
-import { SkinType, Texture, UseTime } from "@/types/product";
-import { SkinConcern } from "@prisma/client";
+import { Texture, UseTime } from "@/types/product";
+import { SkinConcern, SkinType as PrismaSkinType, ProductType, Gender } from "@prisma/client";
 import { Ingredient } from "@/types/product";
 
 // Type-safe interfaces for the tool
 interface ProductCandidate {
   name: string;
   brand: string;
-  type: string;
-  skinTypes?: SkinType[];
+  type: ProductType;
+  skinTypes?: PrismaSkinType[];
   skinConcerns?: SkinConcern[];
   ingredients?: Ingredient[];
   texture?: Texture;
@@ -80,21 +80,21 @@ export const planAndSendRoutine = tool({
   inputSchema: z
     .object({
       skinType: z
-        .string()
+        .enum([ ...(Object.values(PrismaSkinType) as [string, ...string[]]) ])
         .optional()
         .describe(
-          "User's skin type (oily, dry, combination, normal, sensitive, mature)"
+          "User's skin type (choose only one from: oily, dry, combination, normal, sensitive, mature)"
         ),
       skinConcerns: z
-        .array(z.string())
+        .array(z.enum([ ...(Object.values(SkinConcern) as [string, ...string[]]) ]))
         .optional()
         .describe(
-          "User's skin concerns array like [acne, aging, dark spots, dullness, sensitivity]. Use empty array [] if no concerns."
+          "User's skin concerns array like [ACNE, BLACKHEADS, DARK_CIRCLES, DULLNESS, FINE_LINES]. Use empty array [] if no concerns."
         ),
       gender: z
-        .string()
+        .enum([ ...(Object.values(Gender) as [string, ...string[]]) ])
         .optional()
-        .describe("User's gender (male, female, nonbinary)"),
+        .describe("User's gender (male, female, unisex)"),
       age: z
         .string()
         .optional()
@@ -223,7 +223,7 @@ export const planAndSendRoutine = tool({
         - Primary Concerns
         - Age: age-appropriate active concentrations
         - Climate: texture and occlusive adjustments
-        - Routine Preference: complexity
+        - Routine Preference: Keep user's routine complexity in mind. Minimal means 3-4 steps, 5 minutes max. Standard means 5-7 steps, 10 minutes. Comprehensive means 8+ steps, 15+ minutes.
 
         ## REQUIRED OUTPUT FORMAT:
         Your Personalized Skincare Routine by **Dr. Lavera**
@@ -244,6 +244,9 @@ export const planAndSendRoutine = tool({
         [Same simple format]
       `;
 
+      console.log("userImportantInformation", profile.userImportantInformation);
+      console.log("Products found in the search", candidates);
+
       const prompt = `Here is my profile:
       ${JSON.stringify(
         {
@@ -252,10 +255,10 @@ export const planAndSendRoutine = tool({
           age,
           gender,
           climate,
-          routineComplexity,
           allergies: profile.allergies,
           budget,
           currentRoutine,
+          routineComplexity,
           otherInformation: profile.userImportantInformation,
         },
         null,

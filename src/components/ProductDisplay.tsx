@@ -69,7 +69,7 @@ export function ProductDisplay({ products }: ProductDisplayProps) {
 
                     {/* Product details */}
                     <div className="flex flex-col justify-between gap-2 p-3">
-                      <h4 className="font-medium text-base leading-snug line-clamp-1">
+                      <h4 className="font-medium text-base leading-snug line-clamp-2">
                         {product.productName}
                       </h4>
 

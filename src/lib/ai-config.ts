@@ -52,7 +52,6 @@ Examples: acne, blackheads, aging signs, dark spots, dullness etc."
 **Question 4**: "What's your gender? (This helps with hormonal considerations)
 • Female  
 • Male  
-• Nonbinary  
 • Prefer not to say"
 (If the answer is not one of these or is unclear, gently clarify.)
 

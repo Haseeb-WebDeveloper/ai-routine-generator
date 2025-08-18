@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
     storageKey: "sb-auth-state",
     flowType: "pkce",
-    debug: true,
+    debug: false, // Disable debug logs
   },
   global: {
     headers: {
