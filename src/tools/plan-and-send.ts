@@ -33,7 +33,7 @@ interface ToolProfile {
   email: string;
   budget?: string;
   currentRoutine?: string;
-  userFullInformation?: string;
+  userImportantInformation?: string;
 }
 
 // Enhanced normalizers
@@ -124,7 +124,7 @@ export const planAndSendRoutine = tool({
       email: z
         .string()
         .describe("User's email address for sending the routine"),
-      userFullInformation: z
+      userImportantInformation: z
         .string()
         .optional()
         .describe(
@@ -256,7 +256,7 @@ export const planAndSendRoutine = tool({
           allergies: profile.allergies,
           budget,
           currentRoutine,
-          otherInformation: profile.userFullInformation,
+          otherInformation: profile.userImportantInformation,
         },
         null,
         2
