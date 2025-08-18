@@ -81,16 +81,7 @@ export type PrismaUseTime = "MORNING" | "NIGHT"
 
 export type PrismaCategory = "CORE" | "TREATMENT" | "HYDRATION" | "SPECIAL" | "OPTIONAL"
 
-export type PrismaAgeRange = 
-  | "AGE_0_1"
-  | "AGE_1_3"
-  | "AGE_4_12"
-  | "AGE_13_17"
-  | "AGE_18_25"
-  | "AGE_26_35"
-  | "AGE_36_45"
-  | "AGE_46_60"
-  | "AGE_60_PLUS"
+export type PrismaAgeRange = "KIDS" | "TEEN" | "YOUNG" | "MATURE" | "SENIOR" | "ALL"
 
 // Mapping functions for converting frontend types to Prisma types
 export const mapToPrismaProductType = (type: string): PrismaProductType => {
@@ -272,17 +263,13 @@ export const mapToPrismaTexture = (texture: string): PrismaTexture => {
 }
 
 export const mapToPrismaAgeRange = (age: string): PrismaAgeRange => {
-  // Map string age ranges to Prisma enum values
   const ageMap: Record<string, PrismaAgeRange> = {
-    '0-1': 'AGE_0_1',
-    '1-3': 'AGE_1_3',
-    '4-12': 'AGE_4_12',
-    '13-17': 'AGE_13_17',
-    '18-25': 'AGE_18_25',
-    '26-35': 'AGE_26_35',
-    '36-45': 'AGE_36_45',
-    '46-60': 'AGE_46_60',
-    '60+': 'AGE_60_PLUS'
+    'kids': 'KIDS',
+    'teen': 'TEEN',
+    'young': 'YOUNG',
+    'mature': 'MATURE',
+    'senior': 'SENIOR',
+    'all': 'ALL'
   }
   
   const mapped = ageMap[age]
@@ -291,3 +278,4 @@ export const mapToPrismaAgeRange = (age: string): PrismaAgeRange => {
   }
   return mapped
 }
+

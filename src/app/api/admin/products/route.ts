@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { IProduct } from '@/types/product'
+import { AgeRange, IProduct } from '@/types/product'
 import {
   mapToPrismaProductType,
   mapToPrismaGender,
@@ -10,7 +10,7 @@ import {
   mapToPrismaSkinTypes,
   mapToPrismaSkinConcerns,
   mapToPrismaTexture,
-  mapToPrismaAgeRange
+  mapToPrismaAgeRange,
 } from '@/types/prisma-enums'
 
 export async function GET() {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         brand: body.brand,
         type: mapToPrismaProductType(body.type),
         gender: mapToPrismaGender(body.gender),
-        age: mapToPrismaAgeRange(body.age),
+        age: body.age.map(age => mapToPrismaAgeRange(age)),
         budget: mapToPrismaBudgetRange(body.budget),
         category: mapToPrismaCategory(body.category),
         useTime: mapToPrismaUseTime(body.use_time),

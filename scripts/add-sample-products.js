@@ -183,17 +183,11 @@ const mapTexture = (texture) => {
 }
 
 const mapAgeRange = (age) => {
-  if (age >= 0 && age <= 1) return 'AGE_0_1'
-  if (age >= 1 && age <= 3) return 'AGE_1_3'
-  if (age >= 4 && age <= 12) return 'AGE_4_12'
-  if (age >= 13 && age <= 17) return 'AGE_13_17'
-  if (age >= 18 && age <= 25) return 'AGE_18_25'
-  if (age >= 26 && age <= 35) return 'AGE_26_35'
-  if (age >= 36 && age <= 45) return 'AGE_36_45'
-  if (age >= 46 && age <= 60) return 'AGE_46_60'
-  if (age >= 60) return 'AGE_60_PLUS'
+  if (age === 'children') return 'CHILDREN'
+  if (age === 'young') return 'YOUNG'
+  if (age === 'mature') return 'MATURE'
   
-  return 'AGE_18_25' // Default fallback
+  return 'YOUNG' // Default fallback
 }
 
 const comprehensiveProducts = [
@@ -203,7 +197,7 @@ const comprehensiveProducts = [
     brand: "CeraVe",
     type: "cleanser",
     gender: "unisex",
-    age: "18-25",
+    age: ["young"],
     budget: "budgetFriendly",
     category: "core",
     use_time: ["morning", "night"],
@@ -226,7 +220,7 @@ const comprehensiveProducts = [
     brand: "La Roche-Posay",
     type: "sunscreen",
     gender: "unisex",
-    age: "18-25",
+    age: ["young"],
     budget: "midRange",
     category: "core",
     use_time: ["morning"],
@@ -249,7 +243,7 @@ const comprehensiveProducts = [
     brand: "Neutrogena",
     type: "moisturizer",
     gender: "unisex",
-    age: "18-25",
+    age: ["young"],
     budget: "budgetFriendly",
     category: "core",
     use_time: ["morning", "night"],
@@ -274,7 +268,7 @@ const comprehensiveProducts = [
     brand: "The Ordinary",
     type: "serum",
     gender: "unisex",
-    age: "26-35",
+    age: "young",
     budget: "midRange",
     category: "treatment",
     use_time: ["morning"],
@@ -297,7 +291,7 @@ const comprehensiveProducts = [
     brand: "Neutrogena",
     type: "retinoid",
     gender: "unisex",
-    age: "26-35",
+    age: ["young"],
     budget: "midRange",
     category: "treatment",
     use_time: ["night"],
@@ -320,7 +314,7 @@ const comprehensiveProducts = [
     brand: "The Ordinary",
     type: "serum",
     gender: "unisex",
-    age: "18-25",
+    age: ["young"],
     budget: "budgetFriendly",
     category: "treatment",
     use_time: ["morning", "night"],
@@ -343,7 +337,7 @@ const comprehensiveProducts = [
     brand: "The Inkey List",
     type: "serum",
     gender: "unisex",
-    age: "36-45",
+    age: "mature",
     budget: "midRange",
     category: "treatment",
     use_time: ["morning", "night"],
@@ -368,7 +362,7 @@ const comprehensiveProducts = [
     brand: "Laneige",
     type: "sleepingMask",
     gender: "unisex",
-    age: "18-25",
+    age: "young",
     budget: "Premium",
     category: "hydration",
     use_time: ["night"],
@@ -391,7 +385,7 @@ const comprehensiveProducts = [
     brand: "The Ordinary",
     type: "serum",
     gender: "unisex",
-    age: "18-25",
+    age: "young",
     budget: "budgetFriendly",
     category: "hydration",
     use_time: ["morning", "night"],
@@ -414,7 +408,7 @@ const comprehensiveProducts = [
     brand: "First Aid Beauty",
     type: "moisturizer",
     gender: "unisex",
-    age: "26-35",
+    age: ["young"],
     budget: "midRange",
     category: "hydration",
     use_time: ["morning", "night"],
@@ -439,7 +433,7 @@ const comprehensiveProducts = [
     brand: "Origins",
     type: "clayMask",
     gender: "unisex",
-    age: "18-25",
+    age: "young",
     budget: "midRange",
     category: "special",
     use_time: ["night"],
@@ -462,7 +456,7 @@ const comprehensiveProducts = [
     brand: "Paula's Choice",
     type: "exfoliant",
     gender: "unisex",
-    age: "26-35",
+    age: ["young"],
     budget: "midRange",
     category: "special",
     use_time: ["night"],
@@ -485,7 +479,7 @@ const comprehensiveProducts = [
     brand: "Murad",
     type: "spotTreatment",
     gender: "unisex",
-    age: "18-25",
+    age: ["young"],
     budget: "Premium",
     category: "special",
     use_time: ["night"],
@@ -510,7 +504,7 @@ const comprehensiveProducts = [
     brand: "Sunday Riley",
     type: "faceOil",
     gender: "unisex",
-    age: "36-45",
+    age: "mature",
     budget: "Premium",
     category: "optional",
     use_time: ["night"],
@@ -533,7 +527,7 @@ const comprehensiveProducts = [
     brand: "Kiehl's",
     type: "eyeCream",
     gender: "unisex",
-    age: "26-35",
+    age: "young",
     budget: "Premium",
     category: "optional",
     use_time: ["morning", "night"],
@@ -556,7 +550,7 @@ const comprehensiveProducts = [
     brand: "Laneige",
     type: "lipCare",
     gender: "unisex",
-    age: "18-25",
+    age: "young",
     budget: "midRange",
     category: "optional",
     use_time: ["night"],
@@ -594,7 +588,7 @@ async function addComprehensiveProducts() {
           brand: product.brand,
           type: mapProductType(product.type),
           gender: mapGender(product.gender),
-          age: mapAgeRange(parseInt(product.age.split('-')[0])),
+          age: mapAgeRange(product.age),
           budget: mapBudgetRange(product.budget),
           category: mapCategory(product.category),
           useTime: mapUseTime(product.use_time),

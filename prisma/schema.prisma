@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,26 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User management and authentication
 model User {
-  id            String   @id @default(cuid()) // This will match Supabase Auth user id (UUID)
-  email         String   @unique
-  name          String?  @default("User")
-  passwordHash  String?  @map("password_hash") // For admin users only
-  isActive      Boolean  @default(true) @map("is_active")
-  quizCompleted Boolean  @default(false) @map("quiz_completed")
-  role          String?  @default("user")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  quizResponses QuizResponse[]
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?        @default("User")
+  passwordHash  String?        @map("password_hash")
+  isActive      Boolean        @default(true) @map("is_active")
+  quizCompleted Boolean        @default(false) @map("quiz_completed")
+  role          String?        @default("user")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
   conversations Conversation[]
+  quizResponses QuizResponse[]
 
   @@map("users")
 }
 
-// Quiz responses from users
 model QuizResponse {
   id              String   @id @default(cuid())
   userEmail       String   @map("user_email")
@@ -42,84 +35,97 @@ model QuizResponse {
   lifestyle       String
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  user            User     @relation(fields: [userEmail], references: [email], onDelete: Cascade)
 
   @@map("quiz_responses")
 }
 
-// Email templates for campaigns
 model EmailTemplate {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
   subject   String
   content   String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
   campaigns Campaign[]
 
   @@map("email_templates")
 }
 
-// Email campaigns
 model Campaign {
   id            String         @id @default(cuid())
   name          String
   description   String?
   templateId    String         @map("template_id")
-  selectedUsers String[]       @map("selected_users") // Array of user emails
+  selectedUsers String[]       @map("selected_users")
   status        CampaignStatus @default(draft)
   scheduledAt   DateTime?      @map("scheduled_at")
   sentAt        DateTime?      @map("sent_at")
-  stats         Json? // Campaign statistics
+  stats         Json?
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-
-  // Relations
-  template EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template      EmailTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@map("campaigns")
 }
 
-// Campaign status enum
+model Product {
+  id            String        @id @default(cuid())
+  name          String
+  brand         String
+  type          ProductType
+  gender        Gender
+  age           AgeRange[]
+  budget        BudgetRange
+  category      Category
+  useTime       UseTime[]     @map("use_time")
+  skinTypes     SkinType[]    @map("skin_types")
+  skinConcerns  SkinConcern[] @map("skin_concerns")
+  ingredients   Json
+  texture       Texture
+  fragranceFree Boolean       @map("fragrance_free")
+  alcoholFree   Boolean       @map("alcohol_free")
+  instructions  String
+  price         Decimal       @map("price")
+  purchaseLink  String        @map("purchase_link")
+  imageUrl      String        @map("image_url")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model Conversation {
+  id        String        @id @default(cuid())
+  userEmail String        @map("user_email")
+  title     String?       @default("New Conversation")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  messages  ChatMessage[]
+  user      User          @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  role           String
+  content        String
+  timestamp      DateTime     @default(now())
+  metadata       Json?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
 enum CampaignStatus {
-  draft // lowercase like Supabase
+  draft
   scheduled
   sent
   cancelled
 }
 
-// Product database for skincare recommendations - Updated to match new interface
-model Product {
-  id              String        @id @default(cuid())
-  name            String
-  brand           String
-  type            ProductType
-  gender          Gender
-  age             AgeRange
-  budget          BudgetRange
-  category        Category
-  useTime         UseTime[]     @map("use_time")
-  skinTypes       SkinType[]    @map("skin_types")
-  skinConcerns    SkinConcern[] @map("skin_concerns")
-  ingredients     Json // Array of Ingredient objects
-  texture         Texture
-  fragranceFree   Boolean       @map("fragrance_free")
-  alcoholFree     Boolean       @map("alcohol_free")
-  instructions    String
-  price           Decimal       @map("price")
-  purchaseLink    String        @map("purchase_link")
-  imageUrl        String        @map("image_url")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-
-  @@map("products")
-}
-
-// Product type enums - Updated to match new interface
 enum ProductType {
   CLEANSER
   MOISTURIZER
@@ -169,7 +175,10 @@ enum SkinType {
   DRY
   NORMAL
   SENSITIVE
+  ASPHYXIATED
+  DEHYDRATED
   MATURE
+  ACNE_PRONE
 }
 
 enum SkinConcern {
@@ -228,46 +237,12 @@ enum Category {
   OPTIONAL
 }
 
+
 enum AgeRange {
-  AGE_0_1
-  AGE_1_3
-  AGE_4_12
-  AGE_13_17
-  AGE_18_25
-  AGE_26_35
-  AGE_36_45
-  AGE_46_60
-  AGE_60_PLUS
-}
-
-// Chat conversation model
-model Conversation {
-  id        String   @id @default(cuid())
-  userEmail String   @map("user_email")
-  title     String?  @default("New Conversation")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user     User      @relation(fields: [userEmail], references: [email], onDelete: Cascade)
-  messages ChatMessage[]
-
-  @@map("conversations")
-}
-
-// Individual chat messages within a conversation
-model ChatMessage {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
-  role           String   // "user", "assistant", or "system"
-  content        String   @db.Text
-  timestamp      DateTime @default(now())
-  
-  // For storing structured message data (like tool calls, products, etc.)
-  metadata       Json?    
-
-  // Relations
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@map("chat_messages")
+  KIDS
+  TEEN
+  YOUNG
+  MATURE
+  SENIOR
+  ALL
 }

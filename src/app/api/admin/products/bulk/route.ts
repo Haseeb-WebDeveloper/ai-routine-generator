@@ -10,7 +10,7 @@ import {
   mapToPrismaSkinTypes,
   mapToPrismaSkinConcerns,
   mapToPrismaTexture,
-  mapToPrismaAgeRange
+  mapToPrismaAgeRange,
 } from '@/types/prisma-enums'
 
 export async function POST(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
             brand: product.brand,
             type: mapToPrismaProductType(product.type),
             gender: mapToPrismaGender(product.gender),
-            age: mapToPrismaAgeRange(product.age), // Map age string to Prisma enum
+            age: product.age.map(age => mapToPrismaAgeRange(age)),
             budget: mapToPrismaBudgetRange(product.budget),
             category: mapToPrismaCategory(product.category),
             useTime: mapToPrismaUseTime(product.use_time), // Match schema field name (camelCase)

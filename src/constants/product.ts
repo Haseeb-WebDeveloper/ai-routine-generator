@@ -102,13 +102,10 @@ export const CATEGORIES: Category[] = [
   "optional",
 ];
 export const AGE_RANGES: AgeRange[] = [
-  "0-1",
-  "1-3",
-  "4-12",
-  "13-17",
-  "18-25",
-  "26-35",
-  "36-45",
-  "46-60",
-  "60+",
+  "kids",
+  "teen",
+  "young", 
+  "mature",
+  "senior",
+  "all",
 ];

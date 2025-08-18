@@ -373,15 +373,12 @@ function getBudgetMultiplier(age?: string, budget?: string) {
 function getAgeRangeFilter(age: string) {
   const ageNum = parseInt(age)
   
-  if (ageNum >= 13 && ageNum <= 17) return { in: ['AGE_13_17', 'AGE_18_25'] }
-  if (ageNum >= 18 && ageNum <= 25) return { in: ['AGE_18_25', 'AGE_26_35'] }
-  if (ageNum >= 26 && ageNum <= 35) return { in: ['AGE_18_25', 'AGE_26_35', 'AGE_36_45'] }
-  if (ageNum >= 36 && ageNum <= 45) return { in: ['AGE_26_35', 'AGE_36_45', 'AGE_46_60'] }
-  if (ageNum >= 46 && ageNum <= 60) return { in: ['AGE_36_45', 'AGE_46_60', 'AGE_60_PLUS'] }
-  if (ageNum > 60) return { in: ['AGE_46_60', 'AGE_60_PLUS'] }
+  if (ageNum < 18) return { in: ['CHILDREN'] }
+  if (ageNum >= 18 && ageNum <= 45) return { in: ['YOUNG'] }
+  if (ageNum > 45) return { in: ['MATURE'] }
   
-  // Default: include most common ranges
-  return { in: ['AGE_18_25', 'AGE_26_35', 'AGE_36_45'] }
+  // Default: include young adults
+  return { in: ['YOUNG'] }
 }
 
 function isBudgetCompatible(productBudget: string, userBudget: string) {

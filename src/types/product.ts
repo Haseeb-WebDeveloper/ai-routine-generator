@@ -91,17 +91,7 @@ export type Category =
   | "optional";  // Non-essential extras
 
 
-  // TODO 3
-export type AgeRange =
-  | "0-1"    // Infants – ultra-gentle, fragrance-free
-  | "1-3"    // Toddlers – baby lotions, diaper creams
-  | "4-12"   // Children – mild cleansers, sunscreens for kids
-  | "13-17"  // Teens – acne care, oil control
-  | "18-25"  // Young adults – prevention, light hydration
-  | "26-35"  // Early adulthood – anti-aging prevention, brightening
-  | "36-45"  // Mature skin – fine lines, firmness
-  | "46-60"  // Advanced aging care – deep hydration, wrinkle repair
-  | "60+"    // Senior skin – barrier repair, extra hydration
+export type AgeRange = "kids" | "teen" | "young" | "mature" | "senior" | "all"
 
 
 export interface IProduct {
@@ -109,7 +99,7 @@ export interface IProduct {
   brand: string;
   type: ProductType;
   gender: Gender;
-  age: AgeRange;
+  age: AgeRange[];
   budget: BudgetRange;
   category: Category;
   use_time: UseTime[];

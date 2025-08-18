@@ -15,7 +15,6 @@ import toast from 'react-hot-toast'
 import { IProduct, BudgetRange, Gender, ProductType, AgeRange, Category, Texture, SkinType, SkinConcern, UseTime } from '@/types/product'
 import { PRODUCT_TYPES, SKIN_TYPES, SKIN_CONCERNS, GENDERS, BUDGETS, TEXTURES, USE_TIMES, CATEGORIES, AGE_RANGES } from '@/constants/product'
 
-
 interface Product extends IProduct {
   id: string
   created_at?: string
@@ -38,7 +37,7 @@ export default function Products() {
     brand: '',
     type: 'cleanser',
     gender: 'unisex',
-    age: '18-25',
+    age: [],
     budget: 'midRange',
     category: 'core',
     use_time: [],
@@ -116,7 +115,7 @@ export default function Products() {
       brand: product.brand,
       type: product.type,
       gender: product.gender,
-      age: product.age,
+      age: Array.isArray(product.age) ? product.age : (product.age ? [product.age] : []),
       budget: product.budget,
       category: product.category,
       use_time: product.use_time,
@@ -159,7 +158,7 @@ export default function Products() {
       brand: '',
       type: 'cleanser',
       gender: 'unisex',
-      age: '18-25',
+      age: [],
       budget: 'midRange',
       category: 'core',
       use_time: [],
@@ -322,6 +321,23 @@ export default function Products() {
             row[header] = []
           }
         }
+        // Handle age as array
+        else if (header === 'age') {
+          let ageValue = values[index] || ''
+          // If it looks like a JSON array, try to parse it
+          if (ageValue.startsWith('[') && ageValue.endsWith(']')) {
+            try {
+              row[header] = JSON.parse(ageValue)
+            } catch {
+              ageValue = ageValue.replace(/^\[|\]$/g, '').trim()
+              row[header] = ageValue ? ageValue.split(';').map(v => v.trim()) : []
+            }
+          } else {
+            // Simple semicolon or comma-separated list
+            const separator = ageValue.includes(';') ? ';' : ','
+            row[header] = ageValue ? ageValue.split(separator).map(v => v.trim()) : []
+          }
+        }
         // Handle regular string values
         else {
           row[header] = values[index] || ''
@@ -353,9 +369,15 @@ export default function Products() {
         errors.push(`Row ${index + 1}: Invalid gender: ${row.gender}. Must be one of: ${GENDERS.join(', ')}`)
       }
       
-      // Validate age range
-      if (!row.age || !AGE_RANGES.includes(row.age)) {
-        errors.push(`Row ${index + 1}: Invalid age range: ${row.age}. Must be one of: ${AGE_RANGES.join(', ')}`)
+      // Validate age range (now as array)
+      if (!row.age || !Array.isArray(row.age) || row.age.length === 0) {
+        errors.push(`Row ${index + 1}: At least one age range is required`)
+      } else {
+        row.age.forEach((ageVal: string) => {
+          if (!AGE_RANGES.includes(ageVal as AgeRange)) {
+            errors.push(`Row ${index + 1}: Invalid age range: ${ageVal}. Must be one of: ${AGE_RANGES.join(', ')}`)
+          }
+        })
       }
       
       // Validate budget
@@ -456,6 +478,10 @@ export default function Products() {
       // For array values, split by comma or semicolon
       const separator = value.includes(';') ? ';' : ','
       newData[rowIndex][header] = value.split(separator).map(v => v.trim()).filter(Boolean)
+    } else if (header === 'age') {
+      // For age, split by semicolon or comma
+      const separator = value.includes(';') ? ';' : ','
+      newData[rowIndex][header] = value.split(separator).map(v => v.trim()).filter(Boolean)
     } else if (['fragrance_free', 'alcohol_free'].includes(header)) {
       // For boolean values
       const lowerValue = value.toLowerCase()
@@ -505,6 +531,7 @@ export default function Products() {
           const use_time = Array.isArray(row.use_time) ? row.use_time : []
           const skin_types = Array.isArray(row.skin_types) ? row.skin_types : []
           const skin_concerns = Array.isArray(row.skin_concerns) ? row.skin_concerns : []
+          const age = Array.isArray(row.age) ? row.age : (row.age ? [row.age] : [])
           
           // Ensure ingredients is an array of objects with name and function
           let ingredients = []
@@ -530,7 +557,7 @@ export default function Products() {
             brand: row.brand,
             type: row.type as ProductType,
             gender: row.gender as Gender,
-            age: row.age as AgeRange,
+            age: age as AgeRange[],
             budget: row.budget as BudgetRange,
             category: row.category as Category,
             use_time: use_time as UseTime[],
@@ -578,7 +605,7 @@ export default function Products() {
     }
   }
   
-    const downloadProductTemplate = () => {
+  const downloadProductTemplate = () => {
     // Create a template with all required fields and examples
     const headers = [
       'name',
@@ -646,7 +673,7 @@ export default function Products() {
     ].join(',')
     
     // Add a comment line explaining the format
-    const comment = '# IMPORTANT: For arrays (use_time, skin_types, skin_concerns), use SEMICOLONS (;) as separators, not commas. For ingredients, use format "name:function;name2:function2". See product_csv_guide.md for full documentation.'
+    const comment = '# IMPORTANT: For arrays (age, use_time, skin_types, skin_concerns), use SEMICOLONS (;) as separators, not commas. For ingredients, use format "name:function;name2:function2". See product_csv_guide.md for full documentation.'
     
     const csvContent = `${comment}\n${headers}\n${exampleRow1}\n${exampleRow2}`
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -663,10 +690,12 @@ export default function Products() {
   const handleArrayChange = (field: keyof IProduct, value: string, checked: boolean) => {
     const currentArray = formData[field] as string[]
     if (checked) {
-      setFormData({
-        ...formData,
-        [field]: [...currentArray, value]
-      })
+      if (!currentArray.includes(value)) {
+        setFormData({
+          ...formData,
+          [field]: [...currentArray, value]
+        })
+      }
     } else {
       setFormData({
         ...formData,
@@ -824,7 +853,11 @@ export default function Products() {
                               <input
                                 type="text"
                                 className="w-full border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded p-1"
-                                value={row[header] || ''}
+                                value={
+                                  Array.isArray(row[header])
+                                    ? row[header].join(';')
+                                    : row[header] || ''
+                                }
                                 onChange={(e) => handleCsvDataChange(rowIndex, header, e.target.value)}
                               />
                             </td>
@@ -939,21 +972,20 @@ export default function Products() {
 
                 <div className="space-y-2">
                   <Label htmlFor="age">Age Range</Label>
-                  <Select
-                    value={formData.age}
-                    onValueChange={(value: AgeRange) => setFormData({ ...formData, age: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AGE_RANGES.map((age) => (
-                        <SelectItem key={age} value={age}>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {AGE_RANGES.map((age) => (
+                      <div key={age} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`age_${age}`}
+                          checked={formData.age.includes(age)}
+                          onCheckedChange={(checked) => handleArrayChange('age', age, checked as boolean)}
+                        />
+                        <Label htmlFor={`age_${age}`} className="text-sm">
                           {age}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -1214,7 +1246,7 @@ export default function Products() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-gray-400" />
-                  <span className="text-xs text-gray-700">{product.age}</span>
+                  <span className="text-xs text-gray-700">{Array.isArray(product.age) ? product.age.join(', ') : product.age}</span>
                 </div>
               </div>
               <div className="mb-2">
