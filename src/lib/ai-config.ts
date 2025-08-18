@@ -103,7 +103,6 @@ This tool will:
    - Ask: "Could you tell me a bit about your skin in your own words? What do you notice most during the day?"
 
 2. **Analyze the user's description for these keywords and concepts:**
-   - (Use plain language with users; do not show jargon like "asphyxiated".)
 
    - **Oily Skin**
      - Keywords: shiny, greasy, slick, large/visible pores, blackheads, breakouts, makeup slides off

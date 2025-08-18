@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing emails
-    const existingUsers = await prisma.userEmail.findMany({
+    const existingUsers = await prisma.user.findMany({
       where: {
         email: {
           in: users.map(u => u.email)
@@ -86,19 +86,14 @@ export async function POST(request: NextRequest) {
     // Process each new user
     for (const userData of newUsers) {
       try {
-        // Generate secure token for direct quiz access
-        const timestamp = Date.now()
-        const secureToken = btoa(`${userData.email}:${timestamp}:${Math.random().toString(36)}`)
-        
         // Create user record directly with Prisma
-        const userEmail = await prisma.userEmail.create({
+        const userEmail = await prisma.user.create({
           data: {
             email: userData.email,
             name: userData.name,
             isActive: true,
             quizCompleted: false,
-            uniqueLink: `${process.env.NEXT_PUBLIC_APP_URL}/quiz?email=${encodeURIComponent(userData.email)}&token=${secureToken}`,
-            role: 'user' // Default role for new users
+            role: 'user'
           }
         })
 

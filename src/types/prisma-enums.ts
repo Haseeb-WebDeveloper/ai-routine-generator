@@ -50,10 +50,7 @@ export type PrismaSkinType =
   | "DRY"
   | "NORMAL"
   | "SENSITIVE"
-  | "ASPHYXIATED"
-  | "DEHYDRATED"
   | "MATURE"
-  | "ACNE_PRONE"
 
 export type PrismaSkinConcern =
   | "ACNE"

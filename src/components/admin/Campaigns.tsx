@@ -12,13 +12,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2, Send, Users, Mail, Calendar, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Campaign, EmailTemplate, CampaignCreateData } from '@/types/admin'
-import { User } from '@/types/auth'
+import { Campaign, EmailTemplate, CampaignCreateData, UserDTO } from '@/types/admin'
 
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<UserDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
@@ -338,7 +337,7 @@ export default function Campaigns() {
                           />
                                                    <Label htmlFor={user.id} className="text-sm">
                            {user.email}
-                            {user.updatedAt && (
+                            {user.quiz_completed && (
                              <Badge variant="secondary" className="ml-2">Quiz Completed</Badge>
                            )}
                          </Label>
@@ -395,15 +394,15 @@ export default function Campaigns() {
                       <CardTitle className="text-lg">{campaign.name}</CardTitle>
                       <CardDescription>
                         {campaign.description || 'No description'}
-                        {campaign.status === 'sent' && campaign.sentAt && (
+                        {campaign.status === 'sent' && campaign.sent_at && (
                           <span className="block text-xs text-green-600 mt-1">
-                            ✓ Sent on {new Date(campaign.sentAt).toLocaleString()}
+                            ✓ Sent on {new Date(campaign.sent_at).toLocaleString()}
                           </span>
                         )}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {getStatusBadge(campaign.status, campaign.sentAt)}
+                      {getStatusBadge(campaign.status, campaign.sent_at)}
                       <div className="flex space-x-1">
                         {campaign.status === 'draft' && (
                           <Button
@@ -415,7 +414,7 @@ export default function Campaigns() {
                           </Button>
                         )}
                         {/* Show trigger button for draft campaigns or campaigns that can be re-sent */}
-                        {(campaign.status === 'draft' || campaign.sentAt) && (
+                        {(campaign.status === 'draft' || campaign.sent_at) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -463,7 +462,7 @@ export default function Campaigns() {
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-gray-500" />
                       <span className="text-sm text-gray-600">
-                        Created: {new Date(campaign.createdAt).toLocaleDateString()}
+                        Created: {new Date(campaign.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

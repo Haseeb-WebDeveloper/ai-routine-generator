@@ -395,7 +395,7 @@ const comprehensiveProducts = [
     budget: "budgetFriendly",
     category: "hydration",
     use_time: ["morning", "night"],
-    skin_types: ["dry", "dehydrated", "normal", "sensitive"],
+    skin_types: ["dry", "normal", "sensitive"],
     skin_concerns: ["dehydration", "dryness"],
     ingredients: [
       { name: "Hyaluronic Acid", function: "Hydrator" },
@@ -418,7 +418,7 @@ const comprehensiveProducts = [
     budget: "midRange",
     category: "hydration",
     use_time: ["morning", "night"],
-    skin_types: ["dry", "dehydrated", "sensitive"],
+    skin_types: ["dry", "sensitive"],
     skin_concerns: ["dehydration", "dryness", "sensitivity"],
     ingredients: [
       { name: "Colloidal Oatmeal", function: "Soothing" },

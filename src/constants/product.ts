@@ -60,10 +60,7 @@ export const SKIN_TYPES: SkinType[] = [
   "dry",
   "normal",
   "sensitive",
-  "asphyxiated",
-  "dehydrated",
   "mature",
-  "acne_prone",
 ];
 export const SKIN_CONCERNS: SkinConcern[] = [
   "acne",
