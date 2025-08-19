@@ -19,8 +19,26 @@ model User {
   updatedAt     DateTime       @updatedAt @map("updated_at")
   conversations Conversation[]
   quizResponses QuizResponse[]
+  skinProfile   SkinProfile?   @relation("UserSkinProfile")
+  skinProfileId String?        @unique @map("skin_profile_id")
 
   @@map("users")
+}
+
+model SkinProfile {
+  id          String   @id @default(cuid())
+  user        User?    @relation("UserSkinProfile", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?  @unique @map("user_id")
+  age         Int?     @map("age")
+  gender      String?  @map("gender")
+  skinType    String?  @map("skin_type")
+  concerns    String[] @map("concerns")
+  budget      String?  @map("budget")
+  climate     String?  @map("climate")
+  allergies   String[] @map("allergies")
+  skinSummary String?  @map("skin_summary")
+
+  @@map("skin_profiles")
 }
 
 model QuizResponse {

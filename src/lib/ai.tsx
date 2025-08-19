@@ -3,7 +3,6 @@ import { streamText, convertToModelMessages, stepCountIs } from "ai";
 import { google } from '@ai-sdk/google';
 import { PROMPT_TEMPLATES } from "./ai-config";
 import { agentTools } from "@/tools";
-import { create } from 'zustand';
 
 // Define product interface
 export interface Product {
@@ -56,35 +55,7 @@ export async function aiAgent(messages: UIMessage[]) {
       tools: agentTools,
       stopWhen: stepCountIs(15),
       onFinish: async (event) => {
-        // console.log("Event call", event.toolCalls);
-        // console.log("Event Content", event.content);
-        // console.log("Event toolResults", event.toolResults);
-        // console.log("Event response", event.response);
-        
-        // Check if there are tool results with products
-        // if (event.toolResults && event.toolResults.length > 0) {
-        //   for (const toolResult of event.toolResults) {
-        //     // Check if this is the plan_and_send_routine tool
-        //     if (toolResult.toolName === 'plan_and_send_routine') {
-        //       try {
-        //         const output = toolResult.output;
-        //         if (output && typeof output === 'object' && 'value' in output) {
-        //           const value = output.value as any;
-                  
-        //           // Check if the output has products
-        //           if (value && Array.isArray(value.products) && value.products.length > 0) {
-        //             console.log("[AI] Found products in tool response:", value.products);
-                    
-        //             // Store products in the global store
-        //             // useProductStore.getState().setProducts(value.products);
-        //           }
-        //         }
-        //       } catch (error) {
-        //         console.error("[AI] Error processing tool result:", error);
-        //       }
-        //     }
-        //   }
-        // }
+        // console.log("[AI] onFinish:", event);
       }
     });
     

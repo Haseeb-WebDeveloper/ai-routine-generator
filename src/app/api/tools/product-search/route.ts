@@ -8,7 +8,8 @@ import {
   mapToPrismaProductType,
   PrismaGender
 } from '@/types/prisma-enums'
-import { ProductType } from '@/types/product';
+import { ProductType } from '@/types/product'
+
 
 interface ProductSelectionProfile {
   skinType?: string;
@@ -17,253 +18,505 @@ interface ProductSelectionProfile {
   gender?: string;
   age?: string;
   routineComplexity?: 'minimal' | 'standard' | 'comprehensive';
+  climate?: string;
 }
 
-// Define essential product categories for different routine complexities
+// Enhanced routine requirements with scoring weights
 const ROUTINE_REQUIREMENTS = {
   minimal: {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     optional: ['serum'] as ProductType[],
-    maxProducts: 4
+    maxProducts: 4,
+    weights: { skinTypeMatch: 20, concernMatch: 15, budgetFit: 8, rating: 12 }
   },
   standard: {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     preferred: ['toner', 'serum', 'eyeCream'] as ProductType[],
     optional: ['essence', 'spotTreatment'] as ProductType[],
-    maxProducts: 7
+    maxProducts: 7,
+    weights: { skinTypeMatch: 15, concernMatch: 12, budgetFit: 6, rating: 10 }
   },
   comprehensive: {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     preferred: ['toner', 'serum', 'eyeCream', 'essence'] as ProductType[],
     optional: ['spotTreatment', 'faceOil', 'sleepingMask', 'exfoliant', 'faceMask'] as ProductType[],
-    maxProducts: 12
+    maxProducts: 12,
+    weights: { skinTypeMatch: 12, concernMatch: 10, budgetFit: 5, rating: 8 }
   }
-} as const;
+} as const
 
-// Priority scoring for different product types based on skin concerns
+// Enhanced concern priority mapping with weights
 const CONCERN_PRIORITY_MAP = {
-  acne: ['spotTreatment', 'serum', 'cleanser', 'toner'],
-  blackheads: ['exfoliant', 'cleanser', 'toner', 'poreMinimizer'],
-  hyperpigmentation: ['serum', 'vitaminC', 'brightening', 'sunscreen'],
-  fine_lines: ['serum', 'retinoid', 'eyeCream', 'antiAging'],
-  wrinkles: ['retinoid', 'peptide', 'antiAging', 'eyeCream'],
-  dullness: ['exfoliant', 'vitaminC', 'brightening', 'essence'],
-  dehydration: ['hydrator', 'essence', 'hydratingMask', 'serum'],
-  dryness: ['moisturizer', 'faceOil', 'barrierCream', 'hydratingMask'],
-  redness: ['soothingCream', 'cicaCream', 'antiRedness', 'barrierCream'],
-  sensitivity: ['barrierCream', 'soothingCream', 'cicaCream'],
-  pores: ['poreMinimizer', 'niacinamide', 'exfoliant', 'toner'],
-  oiliness: ['sebumControl', 'niacinamide', 'toner', 'cleanser']
-};
+  acne: { types: ['spotTreatment', 'serum', 'cleanser', 'toner'], weight: 1.5 },
+  blackheads: { types: ['exfoliant', 'cleanser', 'toner', 'poreMinimizer'], weight: 1.3 },
+  hyperpigmentation: { types: ['serum', 'vitaminC', 'brightening', 'sunscreen'], weight: 1.4 },
+  fine_lines: { types: ['serum', 'retinoid', 'eyeCream', 'antiAging'], weight: 1.2 },
+  wrinkles: { types: ['retinoid', 'peptide', 'antiAging', 'eyeCream'], weight: 1.4 },
+  dullness: { types: ['exfoliant', 'vitaminC', 'brightening', 'essence'], weight: 1.1 },
+  dehydration: { types: ['hydrator', 'essence', 'hydratingMask', 'serum'], weight: 1.3 },
+  dryness: { types: ['moisturizer', 'faceOil', 'barrierCream', 'hydratingMask'], weight: 1.4 },
+  redness: { types: ['soothingCream', 'cicaCream', 'antiRedness', 'barrierCream'], weight: 1.3 },
+  sensitivity: { types: ['barrierCream', 'soothingCream', 'cicaCream'], weight: 1.5 },
+  pores: { types: ['poreMinimizer', 'niacinamide', 'exfoliant', 'toner'], weight: 1.2 },
+  oiliness: { types: ['sebumControl', 'niacinamide', 'toner', 'cleanser'], weight: 1.3 }
+}
+
+interface ScoringWeights {
+  skinTypeMatch: number
+  concernMatch: number
+  budgetFit: number
+  rating: number
+  reviewCount: number
+  brandTrust: number
+}
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     const body = await request.json()
     const profile: ProductSelectionProfile = body
 
-    console.log('[API] Received profile:', profile)
-    console.log('[API] Available routine complexities:', Object.keys(ROUTINE_REQUIREMENTS))
+    console.log('[API] Received validated profile:', profile)
 
-    // Determine routine complexity (default to standard)
-    const complexity = (profile.routineComplexity || 'standard').toLowerCase()
-    const routineReq = ROUTINE_REQUIREMENTS[complexity as keyof typeof ROUTINE_REQUIREMENTS]
+    // Determine routine complexity with fallback
+    const complexity = (profile.routineComplexity || 'standard').toLowerCase() as keyof typeof ROUTINE_REQUIREMENTS
+    const routineReq = ROUTINE_REQUIREMENTS[complexity] || ROUTINE_REQUIREMENTS.standard
+
+    console.log(`[API] Using ${complexity} routine complexity`)
+
+    // OPTIMIZED: Single comprehensive search instead of multiple sequential calls
+    const searchResults = await performOptimizedProductSearch(profile, routineReq)
     
-    console.log('[API] Routine complexity:', profile.routineComplexity)
-    console.log('[API] Normalized complexity:', complexity)
-    console.log('[API] Routine requirements:', routineReq)
-    
-    if (!routineReq) {
-      console.warn(`[API] Unknown routine complexity: ${complexity}, defaulting to standard`)
-      const fallbackComplexity = 'standard' as keyof typeof ROUTINE_REQUIREMENTS
-      const fallbackReq = ROUTINE_REQUIREMENTS[fallbackComplexity]
-      console.log('[API] Using fallback routine requirements:', fallbackReq)
+    if (!searchResults.success) {
+      // Fallback search with relaxed criteria
+      console.log('[API] Primary search failed, attempting fallback')
+      const fallbackResults = await performFallbackSearch(profile, routineReq)
       
-      // Instead of returning an error, use the fallback
-      const finalRoutineReq = fallbackReq
-      console.log('[API] Using fallback routine requirements for processing')
+      if (!fallbackResults.success) {
+        throw new Error('All search strategies failed')
+      }
       
-      // Continue with the fallback requirements
-      const requiredProducts = await fetchRequiredProducts(profile, finalRoutineReq.required)
-      const concernProducts = await fetchConcernSpecificProducts(profile, finalRoutineReq.maxProducts - requiredProducts.length)
-      const remainingSlots = finalRoutineReq.maxProducts - requiredProducts.length - concernProducts.length
-      const fillerProducts = await fetchFillerProducts(profile, remainingSlots, [...requiredProducts, ...concernProducts])
-      
-      const allProducts = [...requiredProducts, ...concernProducts, ...fillerProducts]
-      const uniqueProducts = deduplicateProducts(allProducts)
-      const scoredProducts = scoreProducts(uniqueProducts, profile)
-      const finalProducts = scoredProducts.slice(0, finalRoutineReq.maxProducts)
-      
-      console.log(`[API] Selected ${finalProducts.length} products using fallback routine`)
-      
-      const candidates = finalProducts.map((p) => ({
-        name: p.name,
-        brand: p.brand,
-        type: p.type,
-        price: p.price ? Number(p.price) : null,
-        link: p.purchaseLink,
-        score: p.score,
-        imageUrl: p.imageUrl,
-        instructions: p.instructions || '',
-        useTime: p.useTime,
-        texture: p.texture,
-        skinTypes: p.skinTypes,
-        skinConcerns: p.skinConcerns,
-        ingredients: p.ingredients,
-      }))
-      
-      return NextResponse.json({ 
-        success: true, 
-        products: candidates,
-        count: candidates.length,
-        routineComplexity: fallbackComplexity,
-        note: `Used fallback complexity: ${fallbackComplexity} (original: ${profile.routineComplexity})`
+      return NextResponse.json({
+        success: true,
+        products: fallbackResults.products || [],
+        count: fallbackResults.products?.length || 0,
+        routineComplexity: complexity,
+        searchLatency: Date.now() - startTime,
+        note: 'Used fallback search due to limited matches'
       })
     }
 
-    // Get age-appropriate budget multiplier
-    const budgetMultiplier = getBudgetMultiplier(profile.age, profile.budget)
+    const searchLatency = Date.now() - startTime
+    console.log(`[API] Search completed in ${searchLatency}ms with ${searchResults.products?.length || 0} products`)
 
-    // Step 1: Get required products (cleanser, moisturizer, sunscreen)
-    const requiredProducts = await fetchRequiredProducts(profile, routineReq.required)
-
-    // Step 2: Get concern-specific products
-    const concernProducts = await fetchConcernSpecificProducts(profile, routineReq.maxProducts - requiredProducts.length)
-
-    // Step 3: Fill remaining slots with preferred/optional products
-    const remainingSlots = routineReq.maxProducts - requiredProducts.length - concernProducts.length
-    const fillerProducts = await fetchFillerProducts(profile, remainingSlots, [...requiredProducts, ...concernProducts])
-
-    // Step 4: Combine and deduplicate
-    const allProducts = [...requiredProducts, ...concernProducts, ...fillerProducts]
-    const uniqueProducts = deduplicateProducts(allProducts)
-
-    // Step 5: Apply final scoring and limit
-    const scoredProducts = scoreProducts(uniqueProducts, profile)
-    const finalProducts = scoredProducts.slice(0, routineReq.maxProducts)
-
-    console.log(`[API] Selected ${finalProducts.length} products for ${complexity} routine`)
-
-    const candidates = finalProducts.map((p) => ({
-      name: p.name,
-      brand: p.brand,
-      type: p.type,
-      price: p.price ? Number(p.price) : null,
-      link: p.purchaseLink,
-      score: p.score,
-      imageUrl: p.imageUrl,
-      instructions: p.instructions || '',
-      useTime: p.useTime,
-      texture: p.texture,
-      skinTypes: p.skinTypes,
-      skinConcerns: p.skinConcerns,
-      ingredients: p.ingredients,
-    }))
-
-    return NextResponse.json({ 
-      success: true, 
-      products: candidates,
-      count: candidates.length,
-      routineComplexity: complexity
+    return NextResponse.json({
+      success: true,
+      products: searchResults.products || [],
+      count: searchResults.products?.length || 0,
+      routineComplexity: complexity,
+      searchLatency
     })
 
   } catch (error) {
     console.error('[API] Product search error:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      searchLatency: Date.now() - startTime
     }, { status: 500 })
   } finally {
     await prisma.$disconnect()
   }
 }
 
-async function fetchRequiredProducts(profile: ProductSelectionProfile, requiredTypes: readonly ProductType[]) {
-  const products = []
+async function performOptimizedProductSearch(
+  profile: ProductSelectionProfile, 
+  routineReq: typeof ROUTINE_REQUIREMENTS[keyof typeof ROUTINE_REQUIREMENTS]
+) {
+  try {
+    const baseWhere = buildBaseWhereClause(profile)
+    
+    // OPTIMIZATION 1: Batch fetch all products in fewer queries
+    const [requiredProducts, concernProducts, additionalProducts] = await Promise.all([
+      // Get required products (cleanser, moisturizer, sunscreen)
+      fetchRequiredProductsBatch(profile, routineReq.required, baseWhere),
+      
+      // Get concern-specific products
+      fetchConcernProductsBatch(profile, baseWhere),
+      
+      // Get additional products for preferred/optional categories
+      fetchAdditionalProductsBatch(profile, routineReq, baseWhere)
+    ])
+
+    // OPTIMIZATION 2: Advanced deduplication and scoring
+    const allProducts = [...requiredProducts, ...concernProducts, ...additionalProducts]
+    const uniqueProducts = deduplicateProductsAdvanced(allProducts)
+    const scoredProducts = scoreProductsAdvanced(uniqueProducts, profile, routineReq.weights)
+    
+    // Ensure we have at least the required products
+    const finalProducts = ensureRequiredProducts(scoredProducts, routineReq.required, routineReq.maxProducts)
+
+    const candidates = finalProducts.map(formatProductResponse)
+
+    return {
+      success: true,
+      products: candidates
+    }
+  } catch (error) {
+    console.error('[API] Optimized search failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+async function fetchRequiredProductsBatch(
+  profile: ProductSelectionProfile,
+  requiredTypes: readonly ProductType[],
+  baseWhere: any
+) {
+  const mappedTypes = requiredTypes.map(mapToPrismaProductType)
   
-  for (const type of requiredTypes) {
-    const whereClause = buildBaseWhereClause(profile)
-    // Convert frontend type to Prisma enum type
-    whereClause.type = mapToPrismaProductType(type)
-
-    const product = await prisma.product.findFirst({
-      where: whereClause,
-      orderBy: [
-        { createdAt: 'desc' }
+  // Single query to get all required products
+  const products = await prisma.product.findMany({
+    where: {
+      AND: [
+        baseWhere,
+        { type: { in: mappedTypes } }
       ]
-    })
+    },
+    orderBy: [
 
-    if (product) {
-      products.push(product)
-    } else {
-      // Fallback: get any product of this type
-      const fallback = await prisma.product.findFirst({
-        where: { type: mapToPrismaProductType(type) },
-        orderBy: [{ createdAt: 'desc' }]
-      })
-      if (fallback) products.push(fallback)
+      { createdAt: 'desc' }
+    ],
+    take: requiredTypes.length * 3 // Get multiple options per type
+  })
+
+  // Ensure we have at least one product per required type
+  const productsByType = new Map()
+  const result = []
+  
+  for (const product of products) {
+    const typeCount = productsByType.get(product.type) || 0
+    if (typeCount < 2) { // Take top 2 per type for better selection
+      result.push(product)
+      productsByType.set(product.type, typeCount + 1)
     }
   }
 
-  return products
+  // Fallback for missing required types
+  for (const type of requiredTypes) {
+    const mappedType = mapToPrismaProductType(type)
+    if (!result.some(p => p.type === mappedType)) {
+      const fallback = await prisma.product.findFirst({
+        where: { type: mappedType },
+        orderBy: [{ createdAt: 'desc' }]
+      })
+      if (fallback) result.push(fallback)
+    }
+  }
+
+  return result
 }
 
-async function fetchConcernSpecificProducts(profile: ProductSelectionProfile, maxCount: number) {
+async function fetchConcernProductsBatch(
+  profile: ProductSelectionProfile,
+  baseWhere: any
+) {
   if (!profile.skinConcerns || profile.skinConcerns.length === 0) {
     return []
   }
 
-  const products = []
-  const usedTypes = new Set<ProductType>()
-
-  // Get priority product types for each concern
-  for (const concern of profile.skinConcerns) {
-    const priorityTypes = CONCERN_PRIORITY_MAP[concern as keyof typeof CONCERN_PRIORITY_MAP] || []
+  try {
+    const mappedConcerns = mapToPrismaSkinConcerns(profile.skinConcerns)
     
-    for (const type of priorityTypes) {
-      if (usedTypes.has(type as ProductType) || products.length >= maxCount) continue
+    // Single query for all concern-related products
+    const products = await prisma.product.findMany({
+      where: {
+        AND: [
+          baseWhere,
+          { skinConcerns: { hasSome: mappedConcerns } }
+        ]
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ],
+      take: 15 // Get more products for better selection
+    })
 
-      const whereClause = buildBaseWhereClause(profile)
+    return products
+  } catch (error) {
+    console.warn('[API] Concern products fetch failed:', error)
+    return []
+  }
+}
+
+async function fetchAdditionalProductsBatch(
+  profile: ProductSelectionProfile,
+  routineReq: any,
+  baseWhere: any
+) {
+  const allOptionalTypes = [...(routineReq.preferred || []), ...(routineReq.optional || [])]
+  
+  if (allOptionalTypes.length === 0) return []
+
+  try {
+    const mappedTypes = allOptionalTypes.map(mapToPrismaProductType)
+    
+    const products = await prisma.product.findMany({
+      where: {
+        AND: [
+          baseWhere,
+          { type: { in: mappedTypes } }
+        ]
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ],
+      take: 20
+    })
+
+    return products
+  } catch (error) {
+    console.warn('[API] Additional products fetch failed:', error)
+    return []
+  }
+}
+
+function deduplicateProductsAdvanced(products: any[]): any[] {
+  const seen = new Map<string, any>()
+  
+  return products.filter(product => {
+    // Create multiple deduplication keys
+    const keys = [
+      `${product.brand?.toLowerCase()}-${product.name?.toLowerCase()}`,
+      `${product.brand?.toLowerCase()}-${normalizeProductName(product.name)}`,
+      product.id?.toString()
+    ].filter(Boolean)
+    
+    // Check if any variant already exists
+    for (const key of keys) {
+      if (seen.has(key)) {
+        const existing = seen.get(key)
+        // Keep the more recently created product
+        if (new Date(product.createdAt) > new Date(existing.createdAt)) {
+          // Update all keys to point to the better product
+          keys.forEach(k => seen.set(k, product))
+          return true
+        }
+        return false
+      }
+    }
+    
+    // Add all keys for this product
+    keys.forEach(key => seen.set(key, product))
+    return true
+  })
+}
+
+function normalizeProductName(name: string): string {
+  if (!name) return ''
+  return name
+    .toLowerCase()
+    .replace(/\b(cream|serum|lotion|gel|cleanser|toner|moisturizer)\b/g, '')
+    .replace(/[^\w\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
+function scoreProductsAdvanced(
+  products: any[], 
+  profile: ProductSelectionProfile,
+  weights: any
+): any[] {
+  const adaptiveWeights = getAdaptiveWeights(profile, weights)
+  
+  return products.map(product => {
+    let score = 0
+
+    // Skin type matching with partial compatibility
+    if (profile.skinType && product.skinTypes) {
+      const exactMatch = product.skinTypes.includes(profile.skinType)
+      const compatibleTypes = getCompatibleSkinTypes(profile.skinType)
+      const hasCompatible = product.skinTypes.some((type: string) => compatibleTypes.includes(type))
       
-      // Look for products that target this specific concern
-      try {
-        const mappedConcerns = mapToPrismaSkinConcerns([concern])
-        whereClause.skinConcerns = { hasSome: mappedConcerns }
-        whereClause.type = mapToPrismaProductType(type)
-      } catch (error) {
-        continue // Skip invalid concerns
-      }
+      score += exactMatch ? adaptiveWeights.skinTypeMatch : (hasCompatible ? adaptiveWeights.skinTypeMatch * 0.6 : 0)
+    }
 
-      const product = await prisma.product.findFirst({
-        where: whereClause,
-        orderBy: [{ createdAt: 'desc' }]
-      })
-
-      if (product) {
-        products.push(product)
-        usedTypes.add(type as ProductType)
+    // Enhanced concern matching with priority weights
+    if (profile.skinConcerns && product.skinConcerns) {
+      let concernScore = 0
+      for (const concern of profile.skinConcerns) {
+        if (product.skinConcerns.includes(concern)) {
+          const concernWeight = CONCERN_PRIORITY_MAP[concern as keyof typeof CONCERN_PRIORITY_MAP]?.weight || 1
+          concernScore += adaptiveWeights.concernMatch * concernWeight
+        }
       }
+      score += concernScore
+    }
+
+    // Budget compatibility with graduated scoring
+    if (profile.budget && product.budget) {
+      const budgetScore = calculateBudgetScore(product.budget, profile.budget)
+      score += budgetScore * adaptiveWeights.budgetFit
+    }
+
+    // Product quality metrics (using creation date as a proxy since rating/reviewCount don't exist)
+    const daysSinceCreated = (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    const recencyScore = Math.max(0, 10 - daysSinceCreated / 30) // Newer products get higher scores
+    score += recencyScore * (adaptiveWeights.rating || 1)
+
+    // Gender appropriateness
+    if (profile.gender && (product.gender === profile.gender || product.gender === 'UNISEX')) {
+      score += 3
+    }
+
+    // Age appropriateness
+    if (profile.age) {
+      const ageScore = calculateAgeAppropriatenessScore(product, profile.age)
+      score += ageScore * 2
+    }
+
+    return { ...product, score: Math.round(score * 100) / 100 }
+  }).sort((a, b) => b.score - a.score)
+}
+
+function getAdaptiveWeights(profile: ProductSelectionProfile, baseWeights: any): ScoringWeights {
+  const weights = { ...baseWeights, reviewCount: 2, brandTrust: 3 }
+
+  // Adapt weights based on profile
+  if (profile.skinType === 'sensitive') {
+    weights.skinTypeMatch += 5
+    weights.concernMatch += 3
+  }
+
+  if (profile.age && parseInt(profile.age) < 25) {
+    weights.budgetFit += 2
+  }
+
+  if (profile.skinConcerns && profile.skinConcerns.length > 2) {
+    weights.concernMatch += 2
+  }
+
+  return weights
+}
+
+function getCompatibleSkinTypes(skinType: string): string[] {
+  const compatibility = {
+    'oily': ['combination', 'normal'],
+    'dry': ['normal', 'sensitive'],
+    'combination': ['oily', 'normal'],
+    'sensitive': ['dry', 'normal'],
+    'normal': ['oily', 'dry', 'combination', 'sensitive']
+  }
+  return compatibility[skinType as keyof typeof compatibility] || []
+}
+
+function calculateBudgetScore(productBudget: string, userBudget: string): number {
+  const budgetValues = { 'budgetFriendly': 1, 'midRange': 2, 'Premium': 3 }
+  const productValue = budgetValues[productBudget as keyof typeof budgetValues] || 1
+  const userValue = budgetValues[userBudget as keyof typeof budgetValues] || 2
+
+  if (productValue === userValue) return 5
+  if (productValue < userValue) return 3 // Under budget is good
+  if (productValue === userValue + 1) return 1 // Slightly over budget
+  return 0 // Way over budget
+}
+
+function calculateAgeAppropriatenessScore(product: any, age: string): number {
+  const ageNum = parseInt(age)
+  
+  if (!product.age || product.age.includes('ALL')) return 3
+  
+  const ageRanges = {
+    'TEEN': [13, 19],
+    'YOUNG': [20, 29], 
+    'MATURE': [30, 49],
+    'SENIOR': [50, 100]
+  }
+
+  for (const [range, [min, max]] of Object.entries(ageRanges)) {
+    if (product.age.includes(range) && ageNum >= min && ageNum <= max) {
+      return 4
     }
   }
 
-  return products
+  return 1 // Not specifically targeted but not penalized
 }
 
-async function fetchFillerProducts(profile: ProductSelectionProfile, maxCount: number, existingProducts: any[]) {
-  if (maxCount <= 0) return []
+function ensureRequiredProducts(
+  scoredProducts: any[],
+  requiredTypes: readonly ProductType[],
+  maxProducts: number
+): any[] {
+  const result = []
+  const usedTypes = new Set()
 
-  const existingTypes = new Set(existingProducts.map(p => p.type))
-  const whereClause = buildBaseWhereClause(profile)
-  
-  // Exclude already selected product types
-  whereClause.type = { notIn: Array.from(existingTypes) }
+  // First, ensure we have required products
+  for (const requiredType of requiredTypes) {
+    const mappedType = mapToPrismaProductType(requiredType)
+    const requiredProduct = scoredProducts.find(p => p.type === mappedType && !usedTypes.has(p.type))
+    
+    if (requiredProduct) {
+      result.push(requiredProduct)
+      usedTypes.add(requiredProduct.type)
+    }
+  }
 
-  const products = await prisma.product.findMany({
-    where: whereClause,
-    orderBy: [{ createdAt: 'desc' }],
-    take: maxCount
-  })
+  // Fill remaining slots with best scoring products
+  const remainingSlots = maxProducts - result.length
+  const remainingProducts = scoredProducts
+    .filter(p => !usedTypes.has(p.type))
+    .slice(0, remainingSlots)
 
-  return products
+  return [...result, ...remainingProducts]
+}
+
+async function performFallbackSearch(
+  profile: ProductSelectionProfile,
+  routineReq: any
+) {
+  try {
+    // Simplified search with relaxed criteria
+    const products = await prisma.product.findMany({
+      where: {
+        type: { in: routineReq.required.map(mapToPrismaProductType) }
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ],
+      take: routineReq.maxProducts * 2
+    })
+
+    const scoredProducts = scoreProductsAdvanced(products, profile, routineReq.weights)
+    const finalProducts = ensureRequiredProducts(scoredProducts, routineReq.required, routineReq.maxProducts)
+    
+    return {
+      success: true,
+      products: finalProducts.map(formatProductResponse)
+    }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+function formatProductResponse(product: any) {
+  return {
+    id: product.id,
+    name: product.name,
+    brand: product.brand,
+    type: product.type,
+    price: product.price ? Number(product.price) : null,
+    link: product.purchaseLink,
+    score: product.score,
+    imageUrl: product.imageUrl,
+    instructions: product.instructions || '',
+    useTime: product.useTime,
+    texture: product.texture,
+    skinTypes: product.skinTypes,
+    skinConcerns: product.skinConcerns,
+    ingredients: product.ingredients,
+    createdAt: product.createdAt
+  }
 }
 
 function buildBaseWhereClause(profile: ProductSelectionProfile) {
@@ -306,7 +559,6 @@ function buildBaseWhereClause(profile: ProductSelectionProfile) {
     }
   }
 
-  // Add age filtering if needed
   if (profile.age) {
     whereClause.age = getAgeRangeFilter(profile.age)
   }
@@ -314,80 +566,13 @@ function buildBaseWhereClause(profile: ProductSelectionProfile) {
   return whereClause
 }
 
-function deduplicateProducts(products: any[]) {
-  const seen = new Set<string>()
-  return products.filter(product => {
-    const key = `${product.brand}-${product.name}`
-    if (seen.has(key)) {
-      return false
-    }
-    seen.add(key)
-    return true
-  })
-}
-
-function scoreProducts(products: any[], profile: ProductSelectionProfile) {
-  return products.map(product => {
-    let score = 0
-
-    // Base score for skin type match
-    if (profile.skinType && product.skinTypes?.includes(profile.skinType)) {
-      score += 10
-    }
-
-    // Score for concern matches
-    if (profile.skinConcerns) {
-      const concernMatches = profile.skinConcerns.filter(concern => 
-        product.skinConcerns?.includes(concern)
-      ).length
-      score += concernMatches * 5
-    }
-
-    // Score for budget appropriateness
-    if (profile.budget) {
-      if (product.budget === profile.budget) {
-        score += 3
-      } else if (isBudgetCompatible(product.budget, profile.budget)) {
-        score += 1
-      }
-    }
-
-    // Score for gender match
-    if (profile.gender && (product.gender === profile.gender || product.gender === 'UNISEX')) {
-      score += 2
-    }
-
-    return { ...product, score }
-  }).sort((a, b) => b.score - a.score)
-}
-
-function getBudgetMultiplier(age?: string, budget?: string) {
-  // Younger users might prefer budget options, older users might invest more
-  if (!age) return 1
-  const ageNum = parseInt(age)
-  if (ageNum < 25 && budget === 'budgetFriendly') return 1.2
-  if (ageNum > 35 && budget === 'Premium') return 1.1
-  return 1
-}
-
 function getAgeRangeFilter(age: string) {
   const ageNum = parseInt(age)
   
-  if (ageNum < 4) return { hasSome: ['KIDS'] }
-  if (ageNum >= 4 && ageNum <= 12) return { hasSome: ['TEEN'] }
-  if (ageNum >= 13 && ageNum <= 29) return { hasSome: ['YOUNG'] }
-  if (ageNum >= 30 && ageNum <= 49) return { hasSome: ['MATURE'] }
-  if (ageNum >= 50) return { hasSome: ['SENIOR'] }
+  if (ageNum >= 13 && ageNum <= 19) return { hasSome: ['TEEN', 'YOUNG', 'ALL'] }
+  if (ageNum >= 20 && ageNum <= 29) return { hasSome: ['YOUNG', 'ALL'] }
+  if (ageNum >= 30 && ageNum <= 49) return { hasSome: ['MATURE', 'ALL'] }
+  if (ageNum >= 50) return { hasSome: ['SENIOR', 'MATURE', 'ALL'] }
   
-  // Default: include all age ranges
   return { hasSome: ['ALL', 'YOUNG', 'MATURE'] }
-}
-
-function isBudgetCompatible(productBudget: string, userBudget: string) {
-  const budgetHierarchy = ['budgetFriendly', 'midRange', 'Premium']
-  const productIndex = budgetHierarchy.indexOf(productBudget)
-  const userIndex = budgetHierarchy.indexOf(userBudget)
-  
-  // Users can typically afford products at or below their budget level
-  return productIndex <= userIndex
 }

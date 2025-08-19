@@ -247,6 +247,9 @@ export const planAndSendRoutine = tool({
       console.log("userImportantInformation", profile.userImportantInformation);
       console.log("Products found in the search", candidates);
 
+      // Exclude link and imageUrl from the product info in the prompt
+      const promptProducts = candidates.map(({ link, imageUrl, ...rest }) => rest);
+
       const prompt = `Here is my profile:
       ${JSON.stringify(
         {
@@ -266,7 +269,7 @@ export const planAndSendRoutine = tool({
       )}
 
       Here is the curated product selection:
-      ${JSON.stringify(candidates, null, 2)}
+      ${JSON.stringify(promptProducts, null, 2)}
 
       Please create a personalized skincare routine using only the products above.
 
@@ -286,7 +289,6 @@ export const planAndSendRoutine = tool({
       );
 
       console.log("prompt from tool", prompt);
-      console.log("system from tool", system);
 
       const { text } = await generateText({
         model: cohere("command-r-plus"),
