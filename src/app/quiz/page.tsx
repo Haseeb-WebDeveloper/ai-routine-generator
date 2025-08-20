@@ -34,10 +34,10 @@ export default function QuizPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [hasSentInitial, setHasSentInitial] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const initialMessageSentRef = useRef(false); // Use ref to prevent duplicate sends
   const START_PROMPT = "Hi! I'm ready to start.";
 
-  const isLocal = process.env.NODE_ENV === "development";
+  // const isLocal = process.env.NODE_ENV === "development";
 
   // Lightweight cookie reader
   const getCookie = (name: string) => {
@@ -53,36 +53,6 @@ export default function QuizPage() {
     return match ? decodeURIComponent(match[1]) : null;
   };
 
-  // Clean URL parameters after authentication
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("email") || url.searchParams.has("token")) {
-        // Remove query parameters and update URL without page reload
-        const cleanUrl = url.pathname;
-        window.history.replaceState({}, "", cleanUrl);
-      }
-    }
-  }, []);
-
-  // Check authentication status
-  useEffect(() => {
-    const checkAuth = () => {
-      const quizEmail = getCookie("quiz_email");
-      const quizUserId = getCookie("quiz_user_id");
-      const quizVerified = getCookie("quiz_verified");
-
-      if (quizEmail && quizUserId && quizVerified === "1") {
-        setIsAuthenticated(true);
-      }
-    };
-
-    checkAuth();
-    // Also check after a delay
-    const timeoutId = setTimeout(checkAuth, 1000);
-    return () => clearTimeout(timeoutId);
-  }, []);
-
   const {
     messages,
     sendMessage,
@@ -97,6 +67,8 @@ export default function QuizPage() {
 
   // Extract products from messages
   useEffect(() => {
+    console.log(`[QuizPage] Messages updated - count: ${messages.length}`, messages.map(m => ({ role: m.role, id: m.id })));
+    
     if (messages.length === 0) {
       console.log("[QuizPage] No messages yet");
       return;
@@ -134,29 +106,48 @@ export default function QuizPage() {
     }
   }, [messages]);
 
-  // On mount, send a start message as user (hidden later), always send START_PROMPT, and include USER_EMAIL if available
+  // On mount, send a start message as user (hidden later), conditional on verification status
   useEffect(() => {
-    if (!hasSentInitial) {
+    // Use ref to ensure this only runs once
+    if (!hasSentInitial && !initialMessageSentRef.current) {
+      console.log('🚀 [QuizPage] Sending initial message - hasSentInitial:', hasSentInitial, 'ref:', initialMessageSentRef.current);
+      
+      initialMessageSentRef.current = true; // Mark as sent immediately
       setHasSentInitial(true);
+      
       const cookieEmail = getCookie("quiz_email");
       const cookieName = getCookie("quiz_name");
+      const cookieVerified = getCookie("quiz_verified");
+      
+      console.log('🍪 [QuizPage] Cookie check:', { cookieEmail, cookieName, cookieVerified });
+      
       let initialText = START_PROMPT;
-      if (cookieEmail) {
-        if (isLocal) {
-          initialText = `${START_PROMPT} (User name: Haseeb (User email: web.dev.haseeb@gmail.com)`;
-        } else {
-          initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
-        }
+      
+      // Only include user info if they are verified
+      if (cookieVerified === "1" && cookieEmail && cookieName) {
+        initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
+        console.log('📧 [QuizPage] Sending personalized initial message for:', cookieName, cookieEmail);
+      } else {
+        console.log('📧 [QuizPage] Sending basic initial message (no user info)');
       }
+      
+      console.log('📤 [QuizPage] About to send message:', initialText);
+      
       sendMessage({
         role: "user",
         parts: [{ text: initialText, type: "text" }],
+      }).then(() => {
+        console.log('✅ [QuizPage] Initial message sent successfully');
       }).catch((err) => {
-        console.error("Error sending initial message:", err);
+        console.error("❌ [QuizPage] Error sending initial message:", err);
+        // Reset the ref if there was an error so it can try again
+        initialMessageSentRef.current = false;
+        setHasSentInitial(false);
       });
+    } else {
+      console.log('⏭️ [QuizPage] Skipping initial message - hasSentInitial:', hasSentInitial, 'ref:', initialMessageSentRef.current);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSentInitial, sendMessage]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Auto-scroll to bottom for user messages only
   useEffect(() => {
@@ -169,7 +160,7 @@ export default function QuizPage() {
   }, [messages]);
 
   // Only show loading indicator when status is "submitted" (waiting for AI to start streaming)
-  const isLoading = status === "submitted";
+  const isWaitingForAI = status === "submitted";
   // Show streaming state (AI is responding, so don't show loading indicator)
   const isStreaming = status === "streaming";
 
@@ -180,7 +171,7 @@ export default function QuizPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || isStreaming) return;
+    if (!input.trim() || isWaitingForAI || isStreaming) return;
 
     try {
       setInput("");
@@ -201,6 +192,8 @@ export default function QuizPage() {
     setProducts([]); // Clear products
     toast.success("Chat cleared!");
     setHasSentInitial(false); // Allow initial AI message to be sent again
+    initialMessageSentRef.current = false; // Reset the ref as well
+    console.log('🔄 [QuizPage] Quiz reset - cleared hasSentInitial and ref');
   };
 
   // Helper function to check if message contains active tools
@@ -310,7 +303,7 @@ export default function QuizPage() {
                 })}
 
                 {/* Show loading indicator only while waiting for AI to start streaming */}
-                {isLoading && (
+                {isWaitingForAI && (
                   <div className="flex justify-start">
                     <div className="rounded-lg py-3">
                       <div className="flex items-center space-x-2">
@@ -370,7 +363,7 @@ export default function QuizPage() {
                     />
                   </Button>
                 )}
-                {isLoading ? (
+                {isWaitingForAI ? (
                   <Button
                     type="button"
                     onClick={stop}

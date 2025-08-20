@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,57 +14,72 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if user exists in database
-    const { data: user, error } = await supabase
-      .from('user_emails')
-      .select('*')
-      .eq('email', email)
-      .eq('is_active', true)
-      .single()
-
-    if (error || !user) {
+    // Decode and validate the token
+    let tokenData
+    try {
+      const decodedToken = atob(token)
+      tokenData = JSON.parse(decodedToken)
+    } catch (error) {
       return NextResponse.json({ 
         valid: false, 
-        error: 'User not found or inactive' 
+        error: 'Invalid token format' 
+      }, { status: 400 })
+    }
+
+    // Check if token has expired
+    if (Date.now() > tokenData.expiresAt) {
+      return NextResponse.json({ 
+        valid: false, 
+        error: 'Token has expired' 
+      }, { status: 401 })
+    }
+
+    // Check if user exists in database using Prisma
+    const user = await prisma.user.findUnique({
+      where: { email: email }
+    })
+
+    if (!user) {
+      return NextResponse.json({ 
+        valid: false, 
+        error: 'User not found' 
       }, { status: 404 })
     }
 
-    // Token validation - check if the token matches the expected format
-    // Use created_at timestamp, fallback to current timestamp for consistency
-    const timestamp = user.created_at || new Date().toISOString()
-    const expectedToken = btoa(email + timestamp)
-    
-    console.log('Token validation:', {
-      email,
-      providedToken: token,
-      expectedToken,
-      userCreatedAt: user.created_at,
-      usedTimestamp: timestamp,
-      tokensMatch: token === expectedToken
-    })
-    
-    if (token !== expectedToken) {
+    // Verify token data matches user
+    if (tokenData.userId !== user.id || tokenData.email !== user.email) {
       return NextResponse.json({ 
         valid: false, 
-        error: 'Invalid or expired token',
-        debug: {
-          providedToken: token,
-          expectedToken: expectedToken,
-          email: email,
-          userCreatedAt: user.created_at
-        }
+        error: 'Invalid token for this user' 
       }, { status: 401 })
     }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return NextResponse.json({ 
+        valid: false, 
+        error: 'User account is inactive' 
+      }, { status: 403 })
+    }
+
+    console.log('Token validation successful:', {
+      email: user.email,
+      userId: user.id,
+      tokenExpiresAt: new Date(tokenData.expiresAt).toISOString()
+    })
 
     return NextResponse.json({
       valid: true,
       user: {
+        id: user.id,
         email: user.email,
-        quiz_completed: user.quiz_completed,
-        created_at: user.created_at
+        name: user.name,
+        quizCompleted: user.quizCompleted,
+        createdAt: user.createdAt
       }
     })
   } catch (error) {
+    console.error('Quiz validation error:', error)
     return NextResponse.json({ 
       valid: false, 
       error: 'Internal server error' 
