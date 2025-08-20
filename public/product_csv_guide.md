@@ -42,7 +42,7 @@ cleanser, moisturizer, sunscreen, toner, essence, hydrator, serum, ampoule, spot
 0-1, 1-3, 4-12, 13-17, 18-25, 26-35, 36-45, 46-60, 60+
 
 ### Skin Types
-oily, combination, dry, normal, sensitive, mature
+oily, combination, dry, normal, sensitive, mature, all
 
 ### Skin Concerns
 acne, blackheads, dullness, hyperpigmentation, fine_lines, wrinkles, dehydration, dryness, redness, sensitivity, pores, oiliness, uneven_texture, dark_circles, puffiness, scarring, sun_damage

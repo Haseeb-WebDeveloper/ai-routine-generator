@@ -58,7 +58,9 @@ const CONCERN_PRIORITY_MAP = {
   redness: { types: ['soothingCream', 'cicaCream', 'antiRedness', 'barrierCream'], weight: 1.3 },
   sensitivity: { types: ['barrierCream', 'soothingCream', 'cicaCream'], weight: 1.5 },
   pores: { types: ['poreMinimizer', 'niacinamide', 'exfoliant', 'toner'], weight: 1.2 },
-  oiliness: { types: ['sebumControl', 'niacinamide', 'toner', 'cleanser'], weight: 1.3 }
+  oiliness: { types: ['sebumControl', 'niacinamide', 'toner', 'cleanser'], weight: 1.3 },
+  chapped_lips: { types: ['lipBalm', 'lipCare', 'exfoliant'], weight: 1.1 },
+  loss_of_firmness: { types: ['retinoid', 'peptide', 'antiAging', 'eyeCream'], weight: 1.4 }
 }
 
 interface ScoringWeights {

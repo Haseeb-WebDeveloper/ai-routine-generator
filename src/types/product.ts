@@ -4,6 +4,8 @@ export type ProductType =
   | "sunscreen"
   | "toner"
   | "essence"
+  | "faceCream"
+  | "primer"
   | "hydrator"
   | "serum"
   | "ampoule"
@@ -20,6 +22,7 @@ export type ProductType =
   | "faceOil"
   | "eyeCream"
   | "eyeSerum"
+  | "eyeGel"
   | "lipBalm"
   | "lipCare"
   | "makeupRemover"
@@ -47,7 +50,8 @@ export type ProductType =
   | "dry"
   | "normal"
   | "sensitive"              
-  | "mature"                
+  | "mature"
+  | "all"
 
 
   export type SkinConcern =
@@ -55,6 +59,8 @@ export type ProductType =
   | "blackheads"          // Comedones
   | "dullness"            // Lack of radiance
   | "hyperpigmentation"   // Dark spots, uneven tone
+  | "chapped_lips"        // Chapped lips
+  | "loss_of_firmness"    // Loss of firmness
   | "fine_lines"          // Early signs of aging
   | "wrinkles"            // Deeper aging lines
   | "dehydration"         // Lack of water in skin
@@ -64,6 +70,8 @@ export type ProductType =
   | "pores"               // Enlarged or visible pores
   | "oiliness"            // Excess sebum
   | "uneven_texture"      // Rough, bumpy surface
+  | "elasticity"          // Loss of elasticity
+  | "uneven_tone"         // Uneven skin tone
   | "dark_circles"        // Under-eye darkness
   | "puffiness"           // Under-eye swelling
   | "scarring"            // Post-acne or injury marks
@@ -71,17 +79,18 @@ export type ProductType =
 
 
 export type Gender = "male" | "female" | "unisex";
-export type BudgetRange = "budgetFriendly" | "midRange" | "Premium";
+export type BudgetRange = "budgetFriendly" | "midRange" | "premium";
 
 export interface Ingredient {
   name: string;
   function: string; // e.g., "Exfoliant", "Hydrator", "Brightener"
 }
 
-export type Texture = "gel" | "cream" | "lotion" | "foam" | "oil" | "spray" | "mask" | "balm" ;
+export type Texture = "gel" | "cream" | "lotion" | "foam" | "oil" | "spray" | "mask" | "balm" | "fluid" | "liquid" ;
 export type UseTime =
-  | "morning"      // First skincare step of the day
-  | "night"        // Before bed
+  | "morning"     
+  | "night"     
+  | "day"
 
 export type Category =
   | "core"       // Essential daily use (e.g., cleanser, sunscreen)

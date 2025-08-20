@@ -134,10 +134,10 @@ export async function POST(
         console.log(`✅ Email sent successfully to: ${user.email}`)
 
         // Update user's unique link in database
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { quizCompleted: true }
-        })
+        // await prisma.user.update({
+        //   where: { id: user.id },
+        //   data: { quizCompleted: true }
+        // })
 
       } catch (error) {
         failedCount++

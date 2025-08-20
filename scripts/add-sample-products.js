@@ -11,6 +11,7 @@ const mapProductType = (type) => {
     'sunscreen': 'SUNSCREEN',
     'toner': 'TONER',
     'essence': 'ESSENCE',
+    'faceCream': 'FACE_CREAM',
     'hydrator': 'HYDRATOR',
     'serum': 'SERUM',
     'ampoule': 'AMPOULE',

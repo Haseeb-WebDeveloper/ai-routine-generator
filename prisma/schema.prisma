@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -150,6 +151,7 @@ enum ProductType {
   SUNSCREEN
   TONER
   ESSENCE
+  FACE_CREAM
   HYDRATOR
   SERUM
   AMPOULE
@@ -193,10 +195,8 @@ enum SkinType {
   DRY
   NORMAL
   SENSITIVE
-  ASPHYXIATED
-  DEHYDRATED
   MATURE
-  ACNE_PRONE
+  ALL
 }
 
 enum SkinConcern {
@@ -204,6 +204,8 @@ enum SkinConcern {
   BLACKHEADS
   DULLNESS
   HYPERPIGMENTATION
+  CHAPPED_LIPS
+  LOSS_OF_FIRMNESS
   FINE_LINES
   WRINKLES
   DEHYDRATION
@@ -213,6 +215,8 @@ enum SkinConcern {
   PORES
   OILINESS
   UNEVEN_TEXTURE
+  ELASTICITY
+  UNEVEN_TONE
   DARK_CIRCLES
   PUFFINESS
   SCARRING
@@ -240,11 +244,14 @@ enum Texture {
   SPRAY
   MASK
   BALM
+  FLUID
+  LIQUID
 }
 
 enum UseTime {
   MORNING
   NIGHT
+  DAY
 }
 
 enum Category {

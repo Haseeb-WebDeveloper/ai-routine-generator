@@ -57,6 +57,38 @@ export default function Products() {
     loadProducts()
   }, [])
 
+  // Sync form data when editing product changes
+  useEffect(() => {
+    if (editingProduct) {
+      console.log('Editing product changed, syncing form:', editingProduct)
+      
+      // Ensure all arrays are properly formatted and mapped correctly
+      const mappedFormData = {
+        name: editingProduct.name,
+        brand: editingProduct.brand,
+        type: editingProduct.type,
+        gender: editingProduct.gender,
+        age: Array.isArray(editingProduct.age) ? editingProduct.age : (editingProduct.age ? [editingProduct.age] : []),
+        budget: editingProduct.budget,
+        category: editingProduct.category,
+        use_time: Array.isArray(editingProduct.use_time) ? editingProduct.use_time : (editingProduct.use_time ? [editingProduct.use_time] : []),
+        skin_types: Array.isArray(editingProduct.skin_types) ? editingProduct.skin_types : (editingProduct.skin_types ? [editingProduct.skin_types] : []),
+        skin_concerns: Array.isArray(editingProduct.skin_concerns) ? editingProduct.skin_concerns : (editingProduct.skin_concerns ? [editingProduct.skin_concerns] : []),
+        ingredients: Array.isArray(editingProduct.ingredients) ? editingProduct.ingredients : (editingProduct.ingredients ? [editingProduct.ingredients] : []),
+        texture: editingProduct.texture,
+        fragrance_free: editingProduct.fragrance_free,
+        alcohol_free: editingProduct.alcohol_free,
+        instructions: editingProduct.instructions,
+        price: editingProduct.price,
+        purchase_link: editingProduct.purchase_link,
+        image_url: editingProduct.image_url
+      }
+      
+      console.log('Setting form data to:', mappedFormData)
+      setFormData(mappedFormData)
+    }
+  }, [editingProduct])
+
   const loadProducts = async () => {
     try {
       const response = await fetch('/api/admin/products')
@@ -109,27 +141,8 @@ export default function Products() {
   }
 
   const handleEdit = (product: Product) => {
+    console.log('Editing product:', product)
     setEditingProduct(product)
-    setFormData({
-      name: product.name,
-      brand: product.brand,
-      type: product.type,
-      gender: product.gender,
-      age: Array.isArray(product.age) ? product.age : (product.age ? [product.age] : []),
-      budget: product.budget,
-      category: product.category,
-      use_time: product.use_time,
-      skin_types: product.skin_types,
-      skin_concerns: product.skin_concerns,
-      ingredients: product.ingredients,
-      texture: product.texture,
-      fragrance_free: product.fragrance_free,
-      alcohol_free: product.alcohol_free,
-      instructions: product.instructions,
-      price: product.price,
-      purchase_link: product.purchase_link,
-      image_url: product.image_url
-    })
     setShowForm(true)
   }
 
@@ -708,7 +721,7 @@ export default function Products() {
     const colors = {
       budgetFriendly: 'bg-green-100 text-green-800',
       midRange: 'bg-yellow-100 text-yellow-800',
-      Premium: 'bg-red-100 text-red-800'
+      premium: 'bg-red-100 text-red-800'
     }
     return colors[budget]
   }
@@ -732,7 +745,7 @@ export default function Products() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Skincare Products</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Skincare Products ({products.length})</h2>
           <p className="text-gray-600">Manage your product database</p>
         </div>
         <div className="flex space-x-2">
@@ -906,6 +919,12 @@ export default function Products() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* {editingProduct && (
+              <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+                <strong>Debug - Current Form Data:</strong>
+                <pre>{JSON.stringify(formData, null, 2)}</pre>
+              </div>
+            )} */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">

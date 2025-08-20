@@ -17,6 +17,8 @@ export const PRODUCT_TYPES: ProductType[] = [
   "sunscreen",
   "toner",
   "essence",
+  "faceCream",
+  "primer",
   "hydrator",
   "serum",
   "ampoule",
@@ -33,6 +35,7 @@ export const PRODUCT_TYPES: ProductType[] = [
   "faceOil",
   "eyeCream",
   "eyeSerum",
+  "eyeGel",
   "lipBalm",
   "lipCare",
   "makeupRemover",
@@ -61,12 +64,16 @@ export const SKIN_TYPES: SkinType[] = [
   "normal",
   "sensitive",
   "mature",
+  "all",
 ];
+
 export const SKIN_CONCERNS: SkinConcern[] = [
   "acne",
   "blackheads",
   "dullness",
   "hyperpigmentation",
+  "chapped_lips",
+  "loss_of_firmness",
   "fine_lines",
   "wrinkles",
   "dehydration",
@@ -76,13 +83,26 @@ export const SKIN_CONCERNS: SkinConcern[] = [
   "pores",
   "oiliness",
   "uneven_texture",
+  "elasticity",
+  "uneven_tone",
   "dark_circles",
   "puffiness",
   "scarring",
   "sun_damage",
 ];
-export const GENDERS: Gender[] = ["male", "female", "unisex"];
-export const BUDGETS: BudgetRange[] = ["budgetFriendly", "midRange", "Premium"];
+
+export const GENDERS: Gender[] = [
+  "male",
+  "female",
+  "unisex",
+];
+
+export const BUDGETS: BudgetRange[] = [
+  "budgetFriendly",
+  "midRange",
+  "premium",
+];
+
 export const TEXTURES: Texture[] = [
   "gel",
   "cream",
@@ -92,8 +112,16 @@ export const TEXTURES: Texture[] = [
   "spray",
   "mask",
   "balm",
+  "fluid",
+  "liquid",
 ];
-export const USE_TIMES: UseTime[] = ["morning", "night"];
+
+export const USE_TIMES: UseTime[] = [
+  "morning",
+  "night",
+  "day",
+];
+
 export const CATEGORIES: Category[] = [
   "core",
   "treatment",
@@ -101,10 +129,11 @@ export const CATEGORIES: Category[] = [
   "special",
   "optional",
 ];
+
 export const AGE_RANGES: AgeRange[] = [
   "kids",
   "teen",
-  "young", 
+  "young",
   "mature",
   "senior",
   "all",

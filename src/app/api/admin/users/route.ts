@@ -96,22 +96,51 @@ export async function POST(request: NextRequest) {
         // Generate a random password for the user
         const randomPassword = generateRandomPassword()
         
-        // 1. Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        // 1. Check/Create user in Supabase Auth
+        let authData;
+        
+        // First try to get existing user
+        // Always try to create a new auth user
+        const { data: newAuthData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: userData.email,
           password: randomPassword,
-          email_confirm: true, // Auto-confirm email
-        })
-        
+          email_confirm: true,
+          user_metadata: { name: userData.name }
+        });
+
         if (authError) {
-          errors.push(`Failed to create auth user for ${userData.email}: ${authError.message}`)
-          continue
+          if (authError.message.includes('already been registered')) {
+            // If user exists, get their data
+            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+            if (listError) {
+              console.error('Error listing users:', listError);
+              errors.push(`Failed to fetch existing user data for ${userData.email}`);
+              continue;
+            }
+            
+            const existingAuthUser = users.find(u => u.email === userData.email);
+            if (!existingAuthUser) {
+              console.error('Could not find existing user:', userData.email);
+              errors.push(`Failed to find existing user data for ${userData.email}`);
+              continue;
+            }
+            
+            console.log('Found existing auth user:', existingAuthUser.email);
+            authData = existingAuthUser;
+          } else {
+            console.error('Supabase Auth Error:', authError);
+            errors.push(`Failed to create auth user for ${userData.email}: ${authError.message}`);
+            continue;
+          }
+        } else {
+          console.log('Created new auth user:', newAuthData.user.email);
+          authData = newAuthData.user;
         }
         
         // 2. Create user in our database
         const user = await prisma.user.create({
           data: {
-            id: authData.user.id, // Use Supabase Auth user ID
+            id: authData.id, // Use Supabase Auth user ID
             email: userData.email,
             name: userData.name,
             isActive: true,
@@ -133,6 +162,28 @@ export async function POST(request: NextRequest) {
         })
 
       } catch (error) {
+        console.error('Error creating user:', error)
+        // Check if it's a unique constraint violation
+        if (error instanceof Error && error.message.includes('Unique constraint')) {
+          console.log('User already exists in database:', userData.email)
+          // Try to fetch the existing user
+          const existingUser = await prisma.user.findUnique({
+            where: { email: userData.email }
+          })
+          if (existingUser) {
+            insertedUsers.push({
+              id: existingUser.id,
+              email: existingUser.email,
+              name: existingUser.name || '',
+              is_active: existingUser.isActive,
+              quiz_completed: existingUser.quizCompleted,
+              role: existingUser.role || 'user',
+              created_at: existingUser.createdAt.toISOString(),
+              updated_at: existingUser.updatedAt.toISOString()
+            })
+            continue
+          }
+        }
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         errors.push(`Failed to process ${userData.email}: ${errorMessage}`)
       }
