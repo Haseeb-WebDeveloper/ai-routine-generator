@@ -104,6 +104,7 @@ export type AgeRange = "kids" | "teen" | "young" | "mature" | "senior" | "all"
 
 
 export interface IProduct {
+  id: string;
   name: string;
   brand: string;
   type: ProductType;
