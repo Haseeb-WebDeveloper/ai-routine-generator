@@ -39,9 +39,6 @@ export default function ProductForm({
     <Card>
       <CardHeader>
         <CardTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</CardTitle>
-        <CardDescription>
-          {editingProduct ? 'Update product information' : 'Add a new skincare product to the database'}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-6">

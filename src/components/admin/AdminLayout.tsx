@@ -66,9 +66,10 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
     }
   }
 
+  // TODO: Add users back in
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/admin' },
-    { id: 'users', label: 'User Management', icon: Users, path: '/admin/users' },
+    { id: 'dashboard', label: 'User Management', icon: BarChart3, path: '/admin' },
+    // { id: 'users', label: 'User Management', icon: Users, path: '/admin/users' },
     { id: 'campaigns', label: 'Campaigns', icon: Mail, path: '/admin/campaigns' },
     { id: 'email-templates', label: 'Email Templates', icon: Edit, path: '/admin/templates' },
     { id: 'products', label: 'Products', icon: Package, path: '/admin/products' },
@@ -119,7 +120,7 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
                       setSidebarOpen(false)
                     }}
                     className={`
-                      w-full flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-colors
+                      cursor-pointer w-full flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-colors
                       ${(activeTab === tab.id || pathname === tab.path)
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'

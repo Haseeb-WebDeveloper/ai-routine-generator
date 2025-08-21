@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import {
   mapToPrismaSkinTypes,
   mapToPrismaSkinConcerns,
-  mapToPrismaBudgetRange,
+  // mapToPrismaBudgetRange, // Budget code commented out
   mapToPrismaGender,
   mapToPrismaProductType,
   PrismaGender
@@ -27,21 +27,21 @@ const ROUTINE_REQUIREMENTS = {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     optional: ['serum'] as ProductType[],
     maxProducts: 4,
-    weights: { skinTypeMatch: 20, concernMatch: 15, budgetFit: 8, rating: 12 }
+    weights: { skinTypeMatch: 20, concernMatch: 15, /* budgetFit: 8, */ rating: 12 }
   },
   standard: {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     preferred: ['toner', 'serum', 'eyeCream'] as ProductType[],
     optional: ['essence', 'spotTreatment'] as ProductType[],
     maxProducts: 7,
-    weights: { skinTypeMatch: 15, concernMatch: 12, budgetFit: 6, rating: 10 }
+    weights: { skinTypeMatch: 15, concernMatch: 12, /* budgetFit: 6, */ rating: 10 }
   },
   comprehensive: {
     required: ['cleanser', 'moisturizer', 'sunscreen'] as ProductType[],
     preferred: ['toner', 'serum', 'eyeCream', 'essence'] as ProductType[],
     optional: ['spotTreatment', 'faceOil', 'sleepingMask', 'exfoliant', 'faceMask'] as ProductType[],
     maxProducts: 12,
-    weights: { skinTypeMatch: 12, concernMatch: 10, budgetFit: 5, rating: 8 }
+    weights: { skinTypeMatch: 12, concernMatch: 10, /* budgetFit: 5, */ rating: 8 }
   }
 } as const
 
@@ -66,7 +66,7 @@ const CONCERN_PRIORITY_MAP = {
 interface ScoringWeights {
   skinTypeMatch: number
   concernMatch: number
-  budgetFit: number
+  // budgetFit: number // Budget code commented out
   rating: number
   reviewCount: number
   brandTrust: number
@@ -356,10 +356,10 @@ function scoreProductsAdvanced(
     }
 
     // Budget compatibility with graduated scoring
-    if (profile.budget && product.budget) {
-      const budgetScore = calculateBudgetScore(product.budget, profile.budget)
-      score += budgetScore * adaptiveWeights.budgetFit
-    }
+    // if (profile.budget && product.budget) {
+    //   const budgetScore = calculateBudgetScore(product.budget, profile.budget)
+    //   score += budgetScore * adaptiveWeights.budgetFit
+    // }
 
     // Gender appropriateness
     if (profile.gender && (product.gender === profile.gender || product.gender === 'UNISEX')) {
@@ -377,7 +377,9 @@ function scoreProductsAdvanced(
 }
 
 function getAdaptiveWeights(profile: ProductSelectionProfile, baseWeights: any): ScoringWeights {
-  const weights = { ...baseWeights, reviewCount: 2, brandTrust: 3 }
+  // Remove budgetFit from weights
+  const { budgetFit, ...restBaseWeights } = baseWeights
+  const weights = { ...restBaseWeights, reviewCount: 2, brandTrust: 3 }
 
   // Adapt weights based on profile
   if (profile.skinType === 'sensitive') {
@@ -385,15 +387,15 @@ function getAdaptiveWeights(profile: ProductSelectionProfile, baseWeights: any):
     weights.concernMatch += 3
   }
 
-  if (profile.age && parseInt(profile.age) < 25) {
-    weights.budgetFit += 2
-  }
+  // if (profile.age && parseInt(profile.age) < 25) {
+  //   weights.budgetFit += 2
+  // }
 
   if (profile.skinConcerns && profile.skinConcerns.length > 2) {
     weights.concernMatch += 2
   }
 
-  return weights
+  return weights as ScoringWeights
 }
 
 function getCompatibleSkinTypes(skinType: string): string[] {
@@ -407,16 +409,16 @@ function getCompatibleSkinTypes(skinType: string): string[] {
   return compatibility[skinType as keyof typeof compatibility] || []
 }
 
-function calculateBudgetScore(productBudget: string, userBudget: string): number {
-  const budgetValues = { 'budgetFriendly': 1, 'midRange': 2, 'Premium': 3 }
-  const productValue = budgetValues[productBudget as keyof typeof budgetValues] || 1
-  const userValue = budgetValues[userBudget as keyof typeof budgetValues] || 2
+// function calculateBudgetScore(productBudget: string, userBudget: string): number {
+//   const budgetValues = { 'budgetFriendly': 1, 'midRange': 2, 'Premium': 3 }
+//   const productValue = budgetValues[productBudget as keyof typeof budgetValues] || 1
+//   const userValue = budgetValues[userBudget as keyof typeof budgetValues] || 2
 
-  if (productValue === userValue) return 5
-  if (productValue < userValue) return 3 // Under budget is good
-  if (productValue === userValue + 1) return 1 // Slightly over budget
-  return 0 // Way over budget
-}
+//   if (productValue === userValue) return 5
+//   if (productValue < userValue) return 3 // Under budget is good
+//   if (productValue === userValue + 1) return 1 // Slightly over budget
+//   return 0 // Way over budget
+// }
 
 function calculateAgeAppropriatenessScore(product: any, age: string): number {
   const ageNum = parseInt(age)
@@ -527,24 +529,24 @@ function buildBaseWhereClause(profile: ProductSelectionProfile) {
     }
   }
 
-  if (profile.budget) {
-    try {
-      const mappedBudget = mapToPrismaBudgetRange(profile.budget)
-      const budgetFilters = [mappedBudget]
+  // if (profile.budget) {
+  //   try {
+  //     const mappedBudget = mapToPrismaBudgetRange(profile.budget)
+  //     const budgetFilters = [mappedBudget]
       
-      // Include lower budget ranges as well
-      if (profile.budget === "Premium") {
-        budgetFilters.push(mapToPrismaBudgetRange("midRange"))
-        budgetFilters.push(mapToPrismaBudgetRange("budgetFriendly"))
-      } else if (profile.budget === "midRange") {
-        budgetFilters.push(mapToPrismaBudgetRange("budgetFriendly"))
-      }
+  //     // Include lower budget ranges as well
+  //     if (profile.budget === "Premium") {
+  //       budgetFilters.push(mapToPrismaBudgetRange("midRange"))
+  //       budgetFilters.push(mapToPrismaBudgetRange("budgetFriendly"))
+  //     } else if (profile.budget === "midRange") {
+  //       budgetFilters.push(mapToPrismaBudgetRange("budgetFriendly"))
+  //     }
       
-      whereClause.budget = { in: budgetFilters }
-    } catch (error) {
-      console.warn(`[API] Invalid budget "${profile.budget}"`)
-    }
-  }
+  //     whereClause.budget = { in: budgetFilters }
+  //   } catch (error) {
+  //     console.warn(`[API] Invalid budget "${profile.budget}"`)
+  //   }
+  // }
 
   if (profile.gender) {
     try {

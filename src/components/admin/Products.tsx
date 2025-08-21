@@ -8,7 +8,7 @@ import { Plus, Upload, Download, FileText, Save, X, AlertCircle, Package } from 
 import toast from 'react-hot-toast'
 import { IProduct } from '@/types/product'
 import ProductCard from './ProductCard'
-import ProductForm from './ProductForm'
+import ProductFormDialog from './ProductFormDialog'
 import SearchAndFilters from './SearchAndFilters'
 import { 
   Filters, 
@@ -30,7 +30,7 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showFormDialog, setShowFormDialog] = useState(false)
   const [showBulkUpload, setShowBulkUpload] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [csvData, setCsvData] = useState<any[]>([])
@@ -145,7 +145,7 @@ export default function Products() {
 
       if (response.ok) {
         toast.success(editingProduct ? 'Product updated!' : 'Product created!')
-        setShowForm(false)
+        setShowFormDialog(false)
         setEditingProduct(null)
         resetForm()
         await loadProducts()
@@ -163,7 +163,7 @@ export default function Products() {
   const handleEdit = (product: Product) => {
     console.log('Editing product:', product)
     setEditingProduct(product)
-    setShowForm(true)
+    setShowFormDialog(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -335,7 +335,7 @@ export default function Products() {
           }
           
           const product: IProduct = {
-            id: row.id || '',
+            id: '',
             name: row.name,
             brand: row.brand,
             type: row.type as any,
@@ -425,6 +425,18 @@ export default function Products() {
     }
   }
 
+  const openAddProductDialog = () => {
+    resetForm()
+    setEditingProduct(null)
+    setShowFormDialog(true)
+  }
+
+  const closeFormDialog = () => {
+    setShowFormDialog(false)
+    setEditingProduct(null)
+    resetForm()
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -452,15 +464,12 @@ export default function Products() {
         <div className="flex space-x-2">
           <Button variant="outline" onClick={() => {
             setShowBulkUpload(true)
-            setShowForm(false)
+            setShowFormDialog(false)
           }}>
             <Upload className="h-4 w-4 mr-2" />
             Bulk Upload
           </Button>
-          <Button onClick={() => {
-            setShowForm(true)
-            setShowBulkUpload(false)
-          }}>
+          <Button onClick={openAddProductDialog}>
             <Plus className="h-4 w-4 mr-2" />
             Add Product
           </Button>
@@ -619,20 +628,18 @@ export default function Products() {
         </Card>
       )}
 
-      {showForm && (
-        <ProductForm
-          formData={formData}
-          setFormData={setFormData}
-          editingProduct={editingProduct}
-          loading={loading}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setShowForm(false)
-            resetForm()
-          }}
-          handleArrayChange={handleArrayChange}
-        />
-      )}
+      {/* Product Form Dialog */}
+      <ProductFormDialog
+        formData={formData}
+        setFormData={setFormData}
+        editingProduct={editingProduct}
+        loading={loading}
+        onSubmit={handleSubmit}
+        onCancel={closeFormDialog}
+        handleArrayChange={handleArrayChange}
+        open={showFormDialog}
+        onOpenChange={setShowFormDialog}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         {filteredProducts.map((product) => (
@@ -646,7 +653,7 @@ export default function Products() {
         ))}
       </div>
 
-      {filteredProducts.length === 0 && !showForm && (
+      {filteredProducts.length === 0 && !showFormDialog && (
         <Card>
           <CardContent className="text-center py-8">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -668,7 +675,7 @@ export default function Products() {
                   Clear Filters
                 </Button>
               )}
-              <Button onClick={() => setShowForm(true)}>
+              <Button onClick={openAddProductDialog}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
