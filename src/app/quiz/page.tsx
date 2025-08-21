@@ -7,9 +7,10 @@ import { XCircle, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 import { useChat } from "@ai-sdk/react";
 import Navbar from "@/components/Navbar";
-import { getToolDisplayName } from "@/lib/get-tool-name";
+import { getToolDisplayName, getToolTextLoop } from "@/lib/get-tool-name";
 import Image from "next/image";
 import { ProductDisplay, Product } from "@/components/ProductDisplay";
+import { TextLoop } from "@/components/ui/text-loop";
 
 // Import AI Elements
 import {
@@ -37,7 +38,6 @@ export default function QuizPage() {
   const initialMessageSentRef = useRef(false); // Use ref to prevent duplicate sends
   const START_PROMPT = "Hi! I'm ready to start.";
 
-  // const isLocal = process.env.NODE_ENV === "development";
 
   // Lightweight cookie reader
   const getCookie = (name: string) => {
@@ -235,7 +235,6 @@ export default function QuizPage() {
 
                   const content = extractMessageContent(message);
                   const isToolActive = hasActiveTool(message);
-                  const toolName = getToolDisplayName(message);
 
                   // Check if this is the last assistant message and products are available
                   const assistantMessages = messages.filter(
@@ -274,11 +273,28 @@ export default function QuizPage() {
                           className={`lg:max-w-[80%] max-w-[95%] py-3 border-b border-foreground/20`}
                         >
                           {/* Show tool execution indicator */}
-                          {isToolActive && (
+                          {/* {isToolActive && (
                             <div className="flex items-center gap-2 mb-2 text-foreground">
                               <Settings className="h-4 w-4 animate-spin" />
                               <span className="text-sm font-medium">
-                                {toolName}
+                                <TextLoop
+                                  interval={50}
+                                  className="text-sm font-medium"
+                                >
+                                  {getToolTextLoop(message).map((text, index) => (
+                                    <span key={index}>{text}</span>
+                                  ))}
+                                </TextLoop>
+                              </span>
+                            </div>
+                          )} */}
+
+                           {/* Show tool execution indicator */}
+                           {isToolActive && (
+                            <div className="flex items-center gap-2 mb-2 text-foreground">
+                              <Settings className="h-4 w-4 animate-spin" />
+                              <span className="text-sm font-medium">
+                                {getToolDisplayName(message)}
                               </span>
                             </div>
                           )}

@@ -180,12 +180,12 @@ const components: Options['components'] = {
     </ol>
   ),
   li: ({ node, children, className, ...props }) => (
-    <li className={cn('', className)} {...props}>
+    <li className={cn('-mb-4', className)} {...props}>
       {children}
     </li>
   ),
   ul: ({ node, children, className, ...props }) => (
-    <ul className={cn('ml-4 list-outside list-disc', className)} {...props}>
+    <ul className={cn('ml-4 -mt-8 list-outside list-disc', className)} {...props}>
       {children}
     </ul>
   ),

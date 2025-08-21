@@ -35,7 +35,6 @@ interface ToolProfile {
   allergies?: string;
   climate?: string;
   routineComplexity?: string;
-  email: string;
   budget?: string;
   currentRoutine?: string;
   userImportantInformation?: string;
@@ -130,9 +129,9 @@ export const planAndSendRoutine = tool({
         .string()
         .optional()
         .describe("User's current skincare routine"),
-      email: z
-        .string()
-        .describe("User's email address for sending the routine"),
+      // email: z
+      //   .string()
+      //   .describe("User's email address for sending the routine"),
       userImportantInformation: z
         .string()
         .optional()
@@ -154,15 +153,16 @@ export const planAndSendRoutine = tool({
       const climate = toStringOpt(profile.climate);
       const routineComplexity =
         toStringOpt(profile.routineComplexity) || "standard";
-      const email = profile.email;
+        const currentRoutine = toStringOpt(profile.currentRoutine);
+   
+        // const email = profile.email;
       // Fix: always use explicit budget if provided, otherwise infer
       // const budget =
       //   toStringOpt(profile.budget) || inferBudgetFromProfile(profile);
-      const currentRoutine = toStringOpt(profile.currentRoutine);
       // Validate required fields
-      if (!email || !skinType) {
-        throw new Error("Email and skin type are required fields");
-      }
+      // if (!email || !skinType) {
+      //   throw new Error("Email and skin type are required fields");
+      // }
 
       const baseUrl =
         process.env.NEXT_PUBLIC_BASE_URL ||
@@ -273,29 +273,23 @@ You are Dr. Lavera, a warm, approachable skincare consultant with 20+ years of d
 
 ## REQUIRED OUTPUT STRUCTURE:
 
-**Header:**
 Your Personalized Skincare Routine by **Dr. Lavera**
 
-**Skin Analysis Section:**
 ### What I noticed about your skin:
 [2-3 sentences with personal, specific observations about their skin type, concerns, and what makes their skin unique. Mention how their concerns connect to each other and are treatable.]
 
-**Morning Routine Section:**
 ## Your Morning Routine ☀️
 [For each product:]
 **[Product Name]**
 **Why**: [Explain the science in simple terms, connect to their specific needs]
 **How**: [Clear, actionable instructions with timing/frequency]
 
-**Evening Routine Section:**
 ## Your Evening Routine 🌙
 [Same format as morning, but optimize for nighttime repair and treatment]
 
-**Weekly Treatments (if applicable):**
 ## Weekly Boost 🌟
-[Only include if routine complexity is standard/comprehensive]
+[ONLY include if routine complexity is standard/comprehensive]
 
-**Closing Section:**
 ## A Few Final Thoughts:
 [Encouraging wrap-up with realistic expectations, gradual introduction tips, and empowerment]
 
@@ -397,41 +391,41 @@ Your Personalized Skincare Routine by **Dr. Lavera**
       }));
 
       // Send enhanced email
-      const emailResponse = await fetch(`${baseUrl}/api/send-mail`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          summary,
-          subject: `Your Personalized ${
-            routineComplexity.charAt(0).toUpperCase() +
-            routineComplexity.slice(1)
-          } Skincare Routine ✨`,
-          profile: {
-            skinType,
-            concerns: skinConcerns,
-            complexity: routineComplexity,
-            productCount: candidates.length,
-            // budget,
-          },
-        }),
-      });
+      // const emailResponse = await fetch(`${baseUrl}/api/send-mail`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     email,
+      //     summary,
+      //     subject: `Your Personalized ${
+      //       routineComplexity.charAt(0).toUpperCase() +
+      //       routineComplexity.slice(1)
+      //     } Skincare Routine ✨`,
+      //     profile: {
+      //       skinType,
+      //       concerns: skinConcerns,
+      //       complexity: routineComplexity,
+      //       productCount: candidates.length,
+      //       // budget,
+      //     },
+      //   }),
+      // });
 
-      const emailResult = await emailResponse.json();
+      // const emailResult = await emailResponse.json();
 
-      if (!emailResponse.ok) {
-        console.error("[TOOL/enhanced_plan] Email error:", emailResult);
-        throw new Error(emailResult.error || "Failed to send email");
-      }
+      // if (!emailResponse.ok) {
+      //   console.error("[TOOL/enhanced_plan] Email error:", emailResult);
+      //   throw new Error(emailResult.error || "Failed to send email");
+      // }
 
       console.log(
         "[TOOL/enhanced_plan] === Routine delivered successfully ==="
       );
 
       return {
-        emailSent: true,
+        // emailSent: true,
         message: summary,
         products: structuredProducts,
       };
@@ -439,7 +433,7 @@ Your Personalized Skincare Routine by **Dr. Lavera**
       console.error("[TOOL/enhanced_plan] Error:", err);
       return {
         summary: "",
-        emailSent: false,
+        // emailSent: false,
         error: err instanceof Error ? err.message : "Unknown error occurred",
         message: `I apologize, but there was an issue creating your routine: ${
           err instanceof Error ? err.message : "Unknown error"
