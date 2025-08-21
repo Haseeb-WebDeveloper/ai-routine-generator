@@ -1,15 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { 
   Users, 
-  Upload, 
-  Plus, 
   BarChart3, 
-  Settings,
   Menu,
   X,
   LogOut,
@@ -21,13 +17,14 @@ import {
 interface AdminLayoutProps {
   children: React.ReactNode
   activeTab: string
-  onTabChange: (tab: string) => void
+  onTabChange?: (tab: string) => void
 }
 
 export default function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     // Get current user info from session cookie
@@ -70,14 +67,11 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
   }
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'users', label: 'Manage Users', icon: Users },
-    { id: 'add-users', label: 'Add Users', icon: Plus },
-    { id: 'upload-csv', label: 'Upload CSV', icon: Upload },
-    { id: 'campaigns', label: 'Campaigns', icon: Mail },
-    { id: 'email-templates', label: 'Email Templates', icon: Edit },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/admin' },
+    { id: 'users', label: 'User Management', icon: Users, path: '/admin/users' },
+    { id: 'campaigns', label: 'Campaigns', icon: Mail, path: '/admin/campaigns' },
+    { id: 'email-templates', label: 'Email Templates', icon: Edit, path: '/admin/templates' },
+    { id: 'products', label: 'Products', icon: Package, path: '/admin/products' },
   ]
 
   return (
@@ -116,12 +110,17 @@ export default function AdminLayout({ children, activeTab, onTabChange }: AdminL
                   <button
                     key={tab.id}
                     onClick={() => {
-                      onTabChange(tab.id)
+                      if (onTabChange) {
+                        onTabChange(tab.id)
+                      }
+                      if (tab.path !== pathname) {
+                        router.push(tab.path)
+                      }
                       setSidebarOpen(false)
                     }}
                     className={`
                       w-full flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-colors
-                      ${activeTab === tab.id
+                      ${(activeTab === tab.id || pathname === tab.path)
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }

@@ -319,7 +319,6 @@ function normalizeProductName(name: string): string {
   if (!name) return ''
   return name
     .toLowerCase()
-    .replace(/\b(cream|serum|lotion|gel|cleanser|toner|moisturizer)\b/g, '')
     .replace(/[^\w\s]/g, '')
     .trim()
     .replace(/\s+/g, '-')
@@ -361,11 +360,6 @@ function scoreProductsAdvanced(
       const budgetScore = calculateBudgetScore(product.budget, profile.budget)
       score += budgetScore * adaptiveWeights.budgetFit
     }
-
-    // Product quality metrics (using creation date as a proxy since rating/reviewCount don't exist)
-    const daysSinceCreated = (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    const recencyScore = Math.max(0, 10 - daysSinceCreated / 30) // Newer products get higher scores
-    score += recencyScore * (adaptiveWeights.rating || 1)
 
     // Gender appropriateness
     if (profile.gender && (product.gender === profile.gender || product.gender === 'UNISEX')) {
