@@ -238,7 +238,7 @@ export const planAndSendRoutine = tool({
         ## REQUIRED OUTPUT FORMAT:
         Your Personalized Skincare Routine by **Dr. Lavera**
 
-        ###What I noticed about your skin:
+        ### What I noticed about your skin:
         [Personal observations about their skin type and concerns]
 
         ## Your Morning Routine ☀️
