@@ -409,16 +409,16 @@ function getCompatibleSkinTypes(skinType: string): string[] {
   return compatibility[skinType as keyof typeof compatibility] || []
 }
 
-// function calculateBudgetScore(productBudget: string, userBudget: string): number {
-//   const budgetValues = { 'budgetFriendly': 1, 'midRange': 2, 'Premium': 3 }
-//   const productValue = budgetValues[productBudget as keyof typeof budgetValues] || 1
-//   const userValue = budgetValues[userBudget as keyof typeof budgetValues] || 2
+function calculateBudgetScore(productBudget: string, userBudget: string): number {
+  const budgetValues = { 'budgetFriendly': 1, 'midRange': 2, 'Premium': 3 }
+  const productValue = budgetValues[productBudget as keyof typeof budgetValues] || 1
+  const userValue = budgetValues[userBudget as keyof typeof budgetValues] || 2
 
-//   if (productValue === userValue) return 5
-//   if (productValue < userValue) return 3 // Under budget is good
-//   if (productValue === userValue + 1) return 1 // Slightly over budget
-//   return 0 // Way over budget
-// }
+  if (productValue === userValue) return 5
+  if (productValue < userValue) return 3 // Under budget is good
+  if (productValue === userValue + 1) return 1 // Slightly over budget
+  return 0 // Way over budget
+}
 
 function calculateAgeAppropriatenessScore(product: any, age: string): number {
   const ageNum = parseInt(age)
@@ -503,6 +503,8 @@ function formatProductResponse(product: any) {
     name: product.name,
     brand: product.brand,
     type: product.type,
+    gender: product.gender,
+    age: product.age,
     price: product.price ? Number(product.price) : null,
     link: product.purchaseLink,
     score: product.score,

@@ -7,7 +7,7 @@ export const getToolDisplayName = (message: any) => {
       const toolName = toolPart.type.replace("tool-", "");
       if (toolName.includes("routine")) {
         return "Generating Routine... (Normally takes 1 minute)";
-      } else if (toolName.includes("send_mail")) {
+      } else if (toolName.includes("mail")) {
         return "Sending Mail...";
       }
       return `Using ${toolName}`;

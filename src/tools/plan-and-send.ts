@@ -1,7 +1,7 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
 import { cohere } from "@ai-sdk/cohere";
-import { Texture, UseTime } from "@/types/product";
+import { Texture, UseTime, AgeRange } from "@/types/product";
 import {
   SkinConcern,
   SkinType as PrismaSkinType,
@@ -15,6 +15,8 @@ interface ProductCandidate {
   name: string;
   brand: string;
   type: ProductType;
+  gender: Gender;
+  age: AgeRange;
   skinTypes?: PrismaSkinType[];
   skinConcerns?: SkinConcern[];
   ingredients?: Ingredient[];
@@ -104,7 +106,7 @@ export const planAndSendRoutine = tool({
       age: z
         .string()
         .optional()
-        .describe("User's age as string (e.g., '25', '34')"),
+        .describe("User's age as a string (e.g., '25', '48'). For age ranges (e.g'18-25'), use the middle value like '21'"),
       allergies: z
         .string()
         .optional()
@@ -112,7 +114,7 @@ export const planAndSendRoutine = tool({
       climate: z
         .string()
         .optional()
-        .describe("User's climate (hot, cold, moderate, humid, dry)"),
+        .describe("User's climate (hot, cold, moderate)"),
       routineComplexity: z
         .string()
         .optional()
