@@ -33,6 +33,7 @@ import {
   extractQuestionNumber,
   QuizSuggestion,
 } from "@/lib/quiz-suggestions";
+import { TextShimmer } from "@/components/ui/shimer";
 
 export default function QuizPage() {
   const [input, setInput] = useState("");
@@ -364,12 +365,9 @@ export default function QuizPage() {
 
                           {/* Show tool execution indicator */}
                           {isToolActive && (
-                            <div className="flex items-center gap-2 mb-2 text-foreground">
-                              <Settings className="h-4 w-4 animate-spin" />
-                              <span className="text-sm font-medium">
-                                {getToolDisplayName(message)}
-                              </span>
-                            </div>
+                            <TextShimmer>
+                              {getToolDisplayName(message)}
+                            </TextShimmer>
                           )}
 
                           {/* Show message content with conditional scroll behavior */}
@@ -395,10 +393,7 @@ export default function QuizPage() {
                 {isWaitingForAI && (
                   <div className="flex justify-start">
                     <div className="rounded-lg py-3">
-                      <div className="flex items-center space-x-2">
-                        <Loader size={16} />
-                        <span>Lavera is thinking...</span>
-                      </div>
+                      <TextShimmer>Lavera is thinking...</TextShimmer>
                     </div>
                   </div>
                 )}

@@ -18,7 +18,7 @@ interface ProductSelectionProfile {
   gender?: string;
   age?: string;
   routineComplexity?: 'minimal' | 'standard' | 'comprehensive';
-  climate?: string;
+  // climate?: string;
 }
 
 // Enhanced routine requirements with scoring weights

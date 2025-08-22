@@ -60,14 +60,6 @@ export function getQuizSuggestions(questionNumber: number): QuizSuggestion[] {
       // Skip suggestions for current routine question
       return [];
     
-    case 7:
-      // Climate suggestions
-      return [
-        { text: "Hot", value: "Hot" },
-        { text: "Cold", value: "Cold" },
-        { text: "Moderate/varies", value: "Moderate/varies" }
-      ];
-    
     case 8:
       // Time commitment suggestions
       return [
@@ -76,14 +68,14 @@ export function getQuizSuggestions(questionNumber: number): QuizSuggestion[] {
         { text: "Comprehensive (15+ min)", value: "Comprehensive (8+ steps, 15+ minutes)" }
       ];
     
-    case 9:
+    case 7:
       // Product preference suggestions
       return [
+          { text: "None", value: "None" },
         { text: "Heavy creams", value: "I don't like heavy creams" },
         { text: "Oils", value: "I don't like oils" },
         { text: "Sticky serums", value: "I don't like sticky serums" },
         { text: "Strong scents", value: "I don't like strong scents" },
-        { text: "None", value: "None" }
       ];
     
     default:
@@ -92,7 +84,7 @@ export function getQuizSuggestions(questionNumber: number): QuizSuggestion[] {
 }
 
 export function extractQuestionNumber(message: string): number | null {
-  const regex = /Question (\d+) of 9/i;
+  const regex = /Question (\d+) of 8/i;
   const match = message.match(regex);
   return match ? parseInt(match[1], 10) : null;
 }

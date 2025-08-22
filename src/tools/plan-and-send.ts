@@ -35,7 +35,7 @@ interface ToolProfile {
   gender?: string;
   age?: string;
   allergies?: string;
-  climate?: string;
+  // climate?: string;
   routineComplexity?: string;
   budget?: string;
   currentRoutine?: string;
@@ -82,7 +82,7 @@ function inferBudgetFromProfile(profile: ToolProfile): string {
 
 export const planAndSendRoutine = tool({
   description:
-    "Find best-fit products for the user's profile, generate a personalized skincare routine, and send it to the user's email all in one step. Use this tool only after all 9 questions are answered.",
+    "Find best-fit products for the user's profile, generate a personalized skincare routine, and send it to the user's email all in one step. Use this tool only after all 8 questions are answered.",
   inputSchema: z
     .object({
       skinType: z
@@ -111,10 +111,10 @@ export const planAndSendRoutine = tool({
         .string()
         .optional()
         .describe("User's allergies or ingredients to avoid. Optional field."),
-      climate: z
-        .string()
-        .optional()
-        .describe("User's climate (hot, cold, moderate)"),
+      // climate: z
+      //   .string()
+      //   .optional()
+      //   .describe("User's climate (hot, cold, moderate)"),
       routineComplexity: z
         .string()
         .optional()
@@ -152,12 +152,12 @@ export const planAndSendRoutine = tool({
       const gender = toStringOpt(profile.gender);
       const skinConcerns = toStringArrayOpt(profile.skinConcerns) || [];
       const age = toStringOpt(profile.age);
-      const climate = toStringOpt(profile.climate);
       const routineComplexity =
-        toStringOpt(profile.routineComplexity) || "standard";
-        const currentRoutine = toStringOpt(profile.currentRoutine);
-   
-        // const email = profile.email;
+      toStringOpt(profile.routineComplexity) || "standard";
+      const currentRoutine = toStringOpt(profile.currentRoutine);
+      
+      // const climate = toStringOpt(profile.climate);
+      // const email = profile.email;
       // Fix: always use explicit budget if provided, otherwise infer
       // const budget =
       //   toStringOpt(profile.budget) || inferBudgetFromProfile(profile);
@@ -179,7 +179,7 @@ export const planAndSendRoutine = tool({
         age,
         // budget,
         routineComplexity,
-        climate,
+        // climate,
       };
 
       // Call enhanced product search API
@@ -243,11 +243,6 @@ You are Dr. Lavera, a warm, approachable skincare consultant with 20+ years of d
 - **Mature**: Anti-aging actives, collagen support, rich textures
 - **Normal**: Maintenance focus, preventive care, seasonal adjustments
 
-### Climate Considerations:
-- **Hot/Humid**: Lightweight, fast-absorbing, sweat-resistant formulas
-- **Cold/Dry**: Richer textures, barrier protection, humidity boosters
-- **Moderate**: Seasonal rotation suggestions, adaptive routines
-
 ### Routine Complexity Guidelines:
 - **Minimal (3-4 steps, 5 mins)**: Multi-tasking products, essential steps only
 - **Standard (5-7 steps, 10 mins)**: Balanced approach, targeted treatments
@@ -264,7 +259,6 @@ You are Dr. Lavera, a warm, approachable skincare consultant with 20+ years of d
 2. **Concern Targeting**: Match active ingredients to primary concerns
 3. **Texture Harmony**: Ensure products layer well together
 4. **Frequency Planning**: Introduce actives gradually, avoid over-treatment
-5. **Seasonal Awareness**: Consider climate impact on product performance
 
 ## CONTRAINDICATION AWARENESS:
 - Avoid vitamin C + retinol in same routine without buffering
@@ -336,7 +330,6 @@ Your Personalized Skincare Routine by **Dr. Lavera**
           primaryConcerns: skinConcerns,
           age,
           gender,
-          climate,
           allergies: profile.allergies,
           currentRoutine,
           routineComplexity,
@@ -356,7 +349,6 @@ Your Personalized Skincare Routine by **Dr. Lavera**
       - Target primary concerns: ${
         skinConcerns.join(", ") || "overall skin health"
       }
-      - Optimize for ${climate} climate conditions
       - Deliver ${routineComplexity} complexity as requested
       - Ensure age-appropriate recommendations for ${age}-year-old
       
