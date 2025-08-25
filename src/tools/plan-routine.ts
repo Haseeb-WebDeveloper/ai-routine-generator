@@ -1,6 +1,7 @@
-import { tool, generateText } from "ai";
+import { tool, generateObject } from "ai";
 import { z } from "zod";
 import { cohere } from "@ai-sdk/cohere";
+import { PROMPT_TEMPLATES } from "@/lib/ai-config";
 import { Texture, UseTime, AgeRange } from "@/types/product";
 import {
   SkinConcern,
@@ -9,6 +10,7 @@ import {
   Gender,
 } from "@prisma/client";
 import { Ingredient } from "@/types/product";
+import { google } from "@ai-sdk/google";
 
 // Type-safe interfaces for the tool
 interface ProductCandidate {
@@ -80,7 +82,7 @@ function inferBudgetFromProfile(profile: ToolProfile): string {
   return "midRange";
 }
 
-export const planAndSendRoutine = tool({
+export const planRoutine = tool({
   description:
     "Find best-fit products for the user's profile, generate a personalized skincare routine, and send it to the user's email all in one step. Use this tool only after all 8 questions are answered.",
   inputSchema: z
@@ -215,117 +217,40 @@ export const planAndSendRoutine = tool({
         );
       }
 
-      // Enhanced system prompt for routine generation
-      const system = `
-You are Dr. Lavera, a warm, approachable skincare consultant with 20+ years of dermatology expertise. You create science-backed, personalized skincare routines using ONLY the provided curated products.
-
-## PERSONALITY & TONE:
-- Speak like a knowledgeable friend, not a clinical textbook
-- Be encouraging and optimistic about their skin journey
-- Use conversational language with occasional skincare "insider tips"
-- Show genuine excitement about helping them achieve their skin goals
-- Balance professionalism with warmth and relatability
-
-## CLINICAL EXPERTISE:
-- Prioritize skin barrier health and gradual improvement over quick fixes
-- Consider ingredient interactions and layering principles
-- Account for purging periods and adjustment phases
-- Respect the skin's natural adaptation timeline
-- Address contraindications and sensitivities
-
-## PERSONALIZATION MATRIX:
-
-### Skin Type Adaptations:
-- **Oily**: Focus on oil control, pore refinement, lightweight textures
-- **Dry**: Emphasize hydration, barrier repair, occlusive ingredients
-- **Combination**: Target-zone specific recommendations, balanced approach
-- **Sensitive**: Gentle formulations, fragrance-free options, patch testing
-- **Mature**: Anti-aging actives, collagen support, rich textures
-- **Normal**: Maintenance focus, preventive care, seasonal adjustments
-
-### Routine Complexity Guidelines:
-- **Minimal (3-4 steps, 5 mins)**: Multi-tasking products, essential steps only
-- **Standard (5-7 steps, 10 mins)**: Balanced approach, targeted treatments
-- **Comprehensive (8+ steps, 15+ mins)**: Full arsenal, specialized products, weekly treatments
-
-### Age-Appropriate Recommendations:
-- **18-25**: Prevention focus, gentle actives, oil control
-- **26-35**: Early anti-aging, targeted treatments, lifestyle adaptation
-- **36-45**: Intensive repair, hormone consideration, advanced actives
-- **45+**: Mature skin needs, barrier strengthening, gentle yet effective
-
-## PRODUCT SELECTION LOGIC:
-1. **Foundation First**: Cleanser + moisturizer + SPF as non-negotiables
-2. **Concern Targeting**: Match active ingredients to primary concerns
-3. **Texture Harmony**: Ensure products layer well together
-4. **Frequency Planning**: Introduce actives gradually, avoid over-treatment
-
-## CONTRAINDICATION AWARENESS:
-- Avoid vitamin C + retinol in same routine without buffering
-- Consider niacinamide concentration limits (10% max typically)
-- Monitor AHA/BHA combination frequency
-- Respect sensitive skin ingredient restrictions
-- Account for pregnancy/breastfeeding limitations when age suggests possibility
-
-## REQUIRED OUTPUT STRUCTURE:
-
-Your Personalized Skincare Routine by **Dr. Lavera**
-
-### What I noticed about your skin:
-[2-3 sentences with personal, specific observations about their skin type, concerns, and what makes their skin unique. Mention how their concerns connect to each other and are treatable.]
-
-## Your Morning Routine ☀️
-[For each product:]
-**[Product Name]**
-**Why**: [Explain the science in simple terms, connect to their specific needs]
-**How**: [Clear, actionable instructions with timing/frequency]
-
-## Your Evening Routine 🌙
-[Same format as morning, but optimize for nighttime repair and treatment]
-
-## Weekly Boost 🌟
-[ONLY include if routine complexity is standard/comprehensive]
-
-## A Few Final Thoughts:
-[Encouraging wrap-up with realistic expectations, gradual introduction tips, and empowerment]
-
-## WRITING GUIDELINES:
-- Use active voice and direct language
-- Include specific benefits, not generic claims
-- Mention realistic timelines for seeing results
-- Add personality with phrases like "your skin will love this" or "this is your secret weapon"
-- Balance technical knowledge with accessibility
-- Always end on an encouraging, supportive note
-- Use emojis sparingly but effectively for section breaks
-- Vary sentence structure to maintain engagement
-
-## CRITICAL CONSTRAINTS:
-- ONLY recommend products from the provided list
-- Match routine complexity to user preference
-- Respect allergies and contraindications
-- Consider current routine to avoid dramatic changes
-- Ensure products work well together (pH, timing, interactions)
-- Provide realistic expectations for results timeline
-
-## QUALITY MARKERS:
-- Each product recommendation should feel personally chosen for them
-- Instructions should be crystal clear and actionable
-- Scientific reasoning should be present but digestible
-- Tone should inspire confidence and excitement about their routine
-- Overall routine should feel achievable and sustainable
-`;
+      // Use system prompt from ai-config.ts
+      const system = PROMPT_TEMPLATES.ROUTINE_GENERATION_PROMPT;
 
       console.log("userImportantInformation", profile.userImportantInformation);
       console.log("Products found in the search", candidates);
 
-      // Exclude link and imageUrl from the product info in the prompt
-      const promptProducts = candidates.map(
-        ({ link, imageUrl, ...rest }) => rest
+      // Define Zod schema for structured routine (remove .url() as Cohere doesn't support format constraints)
+      const routineSchema = z.object({
+        routines: z.array(
+          z.object({
+            title: z.string().describe("Routine title like 'Morning Routine', 'Evening Routine', or 'Weekly Boost'"),
+            steps: z.array(
+              z.object({
+                id: z.number().describe("Sequential step number starting from 1 for each routine"),
+                productName: z.string().describe("Exact product name from candidates list"),
+                productImage: z.string().describe("Product image URL from candidates"),
+                productLink: z.string().describe("Product buy link from candidates"),
+                productPrice: z.number().describe("Product price from candidates"),
+                why: z.string().describe("Simple 1-2 sentence explanation why this product is good for their specific skin needs"),
+                how: z.string().describe("Short Clear, actionable instructions on how to use this product with timing/frequency")
+              })
+            )
+          })
+        ),
+        summary: z.string().describe("Brief encouraging summary of the routine for display")
+      });
+
+      console.log(
+        "[TOOL/enhanced_plan] Generating structured routine with single LLM call..."
       );
 
-      const prompt = `Here is my profile:
-      ${JSON.stringify(
-        {
+      const enhancedPrompt = `Create a personalized skincare routine for this profile:
+        PROFILE:
+        ${JSON.stringify({
           skinType,
           primaryConcerns: skinConcerns,
           age,
@@ -334,44 +259,42 @@ Your Personalized Skincare Routine by **Dr. Lavera**
           currentRoutine,
           routineComplexity,
           otherInformation: profile.userImportantInformation,
-        },
-        null,
-        2
-      )}
+        }, null, 2)}
 
-      Here is the curated product selection:
-      ${JSON.stringify(promptProducts, null, 2)}
+        AVAILABLE PRODUCTS (use EXACT names):
+        ${JSON.stringify(candidates.map(p => ({
+          name: p.name,
+          imageUrl: p.imageUrl,
+          link: p.link,
+          price: p.price,
+          type: p.type,
+          useTime: p.useTime
+        })), null, 2)}
 
-      Please create a personalized skincare routine using only the products above.
+        REQUIREMENTS:
+        - Address ${skinType} skin characteristics  
+        - Target primary concerns: ${skinConcerns.join(", ") || "overall skin health"}
+        - Deliver ${routineComplexity} complexity routine
+        - Age-appropriate for ${age}-year-old
+        - Use ONLY products from the list above
+        - Match product names EXACTLY
+        - Create Morning and Evening routines
+        - Only add Weekly Boost if complexity is standard/comprehensive
+        - For each step: sequential ID, exact product name, why it helps their skin, how to use it
+        - Include encouraging summary`;
 
-      Key Focus Areas:
-      - Address ${skinType} skin characteristics
-      - Target primary concerns: ${
-        skinConcerns.join(", ") || "overall skin health"
-      }
-      - Deliver ${routineComplexity} complexity as requested
-      - Ensure age-appropriate recommendations for ${age}-year-old
-      
-      Generate the complete professional consultation now:`;
-
-      console.log(
-        "[TOOL/enhanced_plan] Generating routine with enhanced context..."
-      );
-
-      console.log("prompt from tool", prompt);
-
-      const { text } = await generateText({
-        model: cohere("command-r-plus"),
+      const { object } = await generateObject({
+        model: google("gemini-2.5-flash"),
+        schema: routineSchema,
         system,
-        prompt,
-        temperature: 0.6, // Slightly more focused for clinical recommendations
+        prompt: enhancedPrompt,
+        temperature: 0.6,
       });
 
-      const summary =
-        (text || "").trim() ||
-        "Your personalized routine will be generated shortly. Please check your email.";
+      const structuredRoutine = object.routines || [];
+      const summary = object.summary || "Your personalized routine has been created!";
 
-      // Prepare structured product data separately
+      // Prepare structured product data separately (keep for backward compatibility)
       const structuredProducts = candidates.map((product) => ({
         productName: product.name,
         brand: product.brand,
@@ -384,44 +307,17 @@ Your Personalized Skincare Routine by **Dr. Lavera**
         } concerns`,
       }));
 
-      // Send enhanced email
-      // const emailResponse = await fetch(`${baseUrl}/api/send-mail`, {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     email,
-      //     summary,
-      //     subject: `Your Personalized ${
-      //       routineComplexity.charAt(0).toUpperCase() +
-      //       routineComplexity.slice(1)
-      //     } Skincare Routine ✨`,
-      //     profile: {
-      //       skinType,
-      //       concerns: skinConcerns,
-      //       complexity: routineComplexity,
-      //       productCount: candidates.length,
-      //       // budget,
-      //     },
-      //   }),
-      // });
-
-      // const emailResult = await emailResponse.json();
-
-      // if (!emailResponse.ok) {
-      //   console.error("[TOOL/enhanced_plan] Email error:", emailResult);
-      //   throw new Error(emailResult.error || "Failed to send email");
-      // }
 
       console.log(
-        "[TOOL/enhanced_plan] === Routine delivered successfully ==="
+        "[TOOL/enhanced_plan] === Routine delivered successfully ===", structuredRoutine, summary
       );
 
       return {
         // emailSent: true,
         message: summary,
         products: structuredProducts,
+        structuredRoutine: structuredRoutine,
+        routineSummary: summary,
       };
     } catch (err) {
       console.error("[TOOL/enhanced_plan] Error:", err);

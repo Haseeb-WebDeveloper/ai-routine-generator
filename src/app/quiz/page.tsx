@@ -10,6 +10,7 @@ import Navbar from "@/components/Navbar";
 import { getToolDisplayName, getToolTextLoop } from "@/lib/get-tool-name";
 import Image from "next/image";
 import { ProductDisplay, Product } from "@/components/ProductDisplay";
+import { RoutineDisplay, RoutineSection } from "@/components/RoutineDisplay";
 import { TextLoop } from "@/components/ui/text-loop";
 
 // Import AI Elements
@@ -38,6 +39,8 @@ import { TextShimmer } from "@/components/ui/shimer";
 export default function QuizPage() {
   const [input, setInput] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [structuredRoutine, setStructuredRoutine] = useState<RoutineSection[]>([]);
+  const [routineSummary, setRoutineSummary] = useState<string>("");
   const [messageSuggestions, setMessageSuggestions] = useState<Map<string, QuizSuggestion[]>>(new Map());
   const [respondedMessages, setRespondedMessages] = useState<Set<string>>(new Set()); // Track messages user has responded to
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -110,15 +113,24 @@ export default function QuizPage() {
       }
     }
 
-    // Look for tool output with products
+    // Look for tool output with products and structured routine
     for (const part of lastMessage.parts as any[]) {
       // Check for both possible tool name formats
-      if (part.type?.includes("plan") && part.type?.includes("send")) {
+      if (part.type?.includes("plan") && part.type?.includes("routine")) {
         if (part.state === "output-available" && part.output) {
+          // Set structured routine if available
+          if (Array.isArray(part.output.structuredRoutine)) {
+            setStructuredRoutine(part.output.structuredRoutine);
+          }
+          // Set routine summary if available
+          if (part.output.routineSummary) {
+            setRoutineSummary(part.output.routineSummary);
+          }
+          // Keep products for backward compatibility
           if (Array.isArray(part.output.products)) {
             setProducts(part.output.products);
-            break;
           }
+          break;
         }
       }
     }
@@ -157,38 +169,64 @@ export default function QuizPage() {
     }
   }, []); // Empty dependency array - only run once on mount
 
-  // Auto-scroll to bottom for user messages and when suggestions change
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === "user") {
-        // Use setTimeout to ensure DOM is updated before scrolling
+// Replace the auto-scroll useEffect in your QuizPage component with this updated version:
+
+useEffect(() => {
+  if (messages.length > 0) {
+    const lastMessage = messages[messages.length - 1];
+    
+    // Auto-scroll for user messages
+    if (lastMessage.role === "user") {
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+    
+    // Auto-scroll for AI messages, but NOT when RoutineDisplay is shown
+    if (lastMessage.role === "assistant") {
+      // Check if this is the last assistant message
+      const assistantMessages = messages.filter((m) => m.role === "assistant");
+      const isLastAssistantMessage = lastMessage.id === assistantMessages[assistantMessages.length - 1]?.id;
+      
+      // Check if structured routine is available (which means RoutineDisplay will be shown)
+      const hasStructuredRoutine = structuredRoutine.length > 0;
+      
+      // Check if this message contains routine data directly in parts
+      let hasRoutineDataInParts = false;
+      if (isLastAssistantMessage && Array.isArray(lastMessage.parts)) {
+        for (const part of lastMessage.parts as any[]) {
+          if (part.type?.includes("plan") && part.type?.includes("routine")) {
+            if (part.state === "output-available" && part.output) {
+              if (Array.isArray(part.output.structuredRoutine) && part.output.structuredRoutine.length > 0) {
+                hasRoutineDataInParts = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Don't auto-scroll if:
+      // 1. This is the last assistant message AND
+      // 2. Either structured routine is available in state OR routine data exists in message parts
+      const shouldNotScroll = isLastAssistantMessage && (hasStructuredRoutine || hasRoutineDataInParts);
+      
+      if (!shouldNotScroll) {
         setTimeout(() => {
           chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
       }
     }
-  }, [messages]);
+  }
+}, [messages, structuredRoutine]); // Added structuredRoutine to dependencies
 
-  // Also scroll when suggestions change to accommodate UI changes
-  useEffect(() => {
-    // Small delay to ensure DOM updates are complete
-    setTimeout(() => {
-      if (chatEndRef.current) {
-        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 50);
-  }, [messageSuggestions]);
+
 
   // Only show loading indicator when status is "submitted" (waiting for AI to start streaming)
   const isWaitingForAI = status === "submitted";
   // Show streaming state (AI is responding, so don't show loading indicator)
   const isStreaming = status === "streaming";
 
-  // Remove debug products state effect
-  // useEffect(() => {
-  //   console.log("[QuizPage] Products state updated:", products);
-  // }, [products]);
 
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -240,6 +278,8 @@ export default function QuizPage() {
   const resetQuiz = () => {
     setMessages([]);
     setProducts([]); // Clear products
+    setStructuredRoutine([]); // Clear structured routine
+    setRoutineSummary(""); // Clear routine summary
     setMessageSuggestions(new Map()); // Clear all message suggestions
     setRespondedMessages(new Set()); // Clear responded messages tracking
     toast.success("Chat cleared!");
@@ -288,7 +328,7 @@ export default function QuizPage() {
                   const isToolActive = hasActiveTool(message);
                   const messageSuggestionsList = messageSuggestions.get(message.id) || [];
 
-                  // Check if this is the last assistant message and products are available
+                  // Check if this is the last assistant message and routine/products are available
                   const assistantMessages = messages.filter(
                     (m) => m.role === "assistant"
                   );
@@ -338,8 +378,17 @@ export default function QuizPage() {
                             </TextShimmer>
                           )}
 
-                          {/* Show message content with conditional scroll behavior */}
-                          {content && (
+                          {/* Show message content only if no structured routine is available */}
+                          {content && !isLastAssistantMessage && (
+                            <div>
+                              <Response className="whitespace-pre-wrap">
+                                {content}
+                              </Response>
+                            </div>
+                          )}
+                          
+                          {/* Show message content for non-routine messages or if structured routine is not available */}
+                          {content && isLastAssistantMessage && structuredRoutine.length === 0 && (
                             <div>
                               <Response className="whitespace-pre-wrap">
                                 {content}
@@ -367,12 +416,19 @@ export default function QuizPage() {
                         </div>
                       </div>
 
-                      {/* Show products immediately after the last assistant message */}
-                      {(() => {
-                        const shouldShowProducts = isLastAssistantMessage && products.length > 0;
-                        return shouldShowProducts;
-                      })() && (
-                        <ProductDisplay products={products} />
+                      {/* Show structured routine or fallback to products after the last assistant message */}
+                      {isLastAssistantMessage && (
+                        <>
+                          {/* Show new structured routine if available */}
+                          {structuredRoutine.length > 0 && (
+                            <RoutineDisplay routines={structuredRoutine} summary={routineSummary} />
+                          )}
+                          
+                          {/* Fallback to old product display if no structured routine */}
+                          {structuredRoutine.length === 0 && products.length > 0 && (
+                            <ProductDisplay products={products} />
+                          )}
+                        </>
                       )}
                     </React.Fragment>
                   );

@@ -207,6 +207,14 @@ const components: Options['components'] = {
       {children}
     </a>
   ),
+  p: ({ node, children, className, ...props }) => (
+    <p
+      className={cn('mt-3 text-lg', className)}
+      {...props}
+    >
+      {children}
+    </p>
+  ),
   h1: ({ node, children, className, ...props }) => (
     <h1
       className={cn('mt-6 mb-2 font-semibold text-3xl', className)}

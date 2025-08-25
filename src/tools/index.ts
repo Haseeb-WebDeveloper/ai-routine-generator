@@ -1,7 +1,7 @@
 import { sendMail } from "./send-mail";
-import { planAndSendRoutine } from "./plan-and-send";
+import { planRoutine } from "./plan-routine";
 
 export const agentTools = {
   send_mail: sendMail,
-  plan_and_send_routine: planAndSendRoutine,
+  plan_routine: planRoutine,
 } as const;
