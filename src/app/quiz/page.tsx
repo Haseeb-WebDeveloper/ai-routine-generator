@@ -25,7 +25,7 @@ import {
   PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
 // import { Tool, ToolHeader, ToolContent } from "@/components/ai-elements/tool";
-import { Loader } from "@/components/ai-elements/loader";
+// import { Loader } from "@/components/ai-elements/loader";
 import { Response } from "@/components/ai-elements/response";
 import { extractMessageContent } from "@/utils/extract-messages-content";
 import {
@@ -38,9 +38,8 @@ import { TextShimmer } from "@/components/ui/shimer";
 export default function QuizPage() {
   const [input, setInput] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
-  const [currentSuggestions, setCurrentSuggestions] = useState<
-    QuizSuggestion[]
-  >([]);
+  const [messageSuggestions, setMessageSuggestions] = useState<Map<string, QuizSuggestion[]>>(new Map());
+  const [respondedMessages, setRespondedMessages] = useState<Set<string>>(new Set()); // Track messages user has responded to
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [hasSentInitial, setHasSentInitial] = useState(false);
@@ -75,22 +74,11 @@ export default function QuizPage() {
 
   // Extract products and suggestions from messages
   useEffect(() => {
-    console.log(
-      `[QuizPage] Messages updated - count: ${messages.length}`,
-      messages.map((m) => ({ role: m.role, id: m.id }))
-    );
-
-    if (messages.length === 0) {
-      console.log("[QuizPage] No messages yet");
-      return;
-    }
-
     // Find the most recent assistant message
     const assistantMessages = messages.filter(
       (msg) => msg.role === "assistant"
     );
     if (assistantMessages.length === 0) {
-      console.log("[QuizPage] No assistant messages found");
       return;
     }
 
@@ -98,7 +86,6 @@ export default function QuizPage() {
 
     // Check if this message has parts
     if (!Array.isArray(lastMessage.parts)) {
-      console.log("[QuizPage] Message has no parts array");
       return;
     }
 
@@ -106,33 +93,31 @@ export default function QuizPage() {
     const content = extractMessageContent(lastMessage);
     if (content) {
       const questionNumber = extractQuestionNumber(content);
-      console.log(`[QuizPage] Content: "${content.substring(0, 100)}..."`);
-      console.log(`[QuizPage] Extracted question number:`, questionNumber);
 
-      if (questionNumber && questionNumber >= 1 && questionNumber <= 9) {
-        const suggestions = getQuizSuggestions(questionNumber);
-        setCurrentSuggestions(suggestions);
-        console.log(
-          `[QuizPage] Question ${questionNumber} detected, showing ${suggestions.length} suggestions:`,
-          suggestions.map((s) => s.text)
-        );
+      if (questionNumber && questionNumber >= 1 && questionNumber <= 8) {
+        // Only show suggestions if user hasn't responded to this message yet
+        if (!respondedMessages.has(lastMessage.id)) {
+          const suggestions = getQuizSuggestions(questionNumber);
+          // Clear all previous suggestions and only show suggestions for this current question
+          setMessageSuggestions(new Map([[lastMessage.id, suggestions]]));
+        } else {
+          // User has already responded to this message, don't show suggestions
+          setMessageSuggestions(new Map());
+        }
       } else {
-        setCurrentSuggestions([]);
-        console.log(
-          `[QuizPage] No valid question number detected, clearing suggestions`
-        );
+        // Clear all suggestions if no valid question number
+        setMessageSuggestions(new Map());
       }
     }
 
     // Look for tool output with products
     for (const part of lastMessage.parts as any[]) {
-      if (part.type?.startsWith("tool-plan_and_send_routine")) {
+      // Check for both possible tool name formats
+      if (part.type?.includes("plan") && part.type?.includes("send")) {
         if (part.state === "output-available" && part.output) {
           if (Array.isArray(part.output.products)) {
             setProducts(part.output.products);
             break;
-          } else {
-            console.log("[QuizPage] No products array in output:", part.output);
           }
         }
       }
@@ -143,13 +128,6 @@ export default function QuizPage() {
   useEffect(() => {
     // Use ref to ensure this only runs once
     if (!hasSentInitial && !initialMessageSentRef.current) {
-      console.log(
-        "🚀 [QuizPage] Sending initial message - hasSentInitial:",
-        hasSentInitial,
-        "ref:",
-        initialMessageSentRef.current
-      );
-
       initialMessageSentRef.current = true; // Mark as sent immediately
       setHasSentInitial(true);
 
@@ -157,105 +135,104 @@ export default function QuizPage() {
       const cookieName = getCookie("quiz_name");
       const cookieVerified = getCookie("quiz_verified");
 
-      console.log("🍪 [QuizPage] Cookie check:", {
-        cookieEmail,
-        cookieName,
-        cookieVerified,
-      });
-
       let initialText = START_PROMPT;
 
       // Only include user info if they are verified
       if (cookieVerified === "1" && cookieEmail && cookieName) {
         initialText = `${START_PROMPT} (User name: ${cookieName}) (User email: ${cookieEmail})`;
-        console.log(
-          "📧 [QuizPage] Sending personalized initial message for:",
-          cookieName,
-          cookieEmail
-        );
-      } else {
-        console.log(
-          "📧 [QuizPage] Sending basic initial message (no user info)"
-        );
       }
-
-      console.log("📤 [QuizPage] About to send message:", initialText);
 
       sendMessage({
         role: "user",
         parts: [{ text: initialText, type: "text" }],
       })
         .then(() => {
-          console.log("✅ [QuizPage] Initial message sent successfully");
+          // Initial message sent successfully
         })
         .catch((err) => {
-          console.error("❌ [QuizPage] Error sending initial message:", err);
           // Reset the ref if there was an error so it can try again
           initialMessageSentRef.current = false;
           setHasSentInitial(false);
         });
-    } else {
-      console.log(
-        "⏭️ [QuizPage] Skipping initial message - hasSentInitial:",
-        hasSentInitial,
-        "ref:",
-        initialMessageSentRef.current
-      );
     }
   }, []); // Empty dependency array - only run once on mount
 
-  // Auto-scroll to bottom for user messages only
+  // Auto-scroll to bottom for user messages and when suggestions change
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "user") {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Use setTimeout to ensure DOM is updated before scrolling
+        setTimeout(() => {
+          chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
       }
     }
   }, [messages]);
+
+  // Also scroll when suggestions change to accommodate UI changes
+  useEffect(() => {
+    // Small delay to ensure DOM updates are complete
+    setTimeout(() => {
+      if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 50);
+  }, [messageSuggestions]);
 
   // Only show loading indicator when status is "submitted" (waiting for AI to start streaming)
   const isWaitingForAI = status === "submitted";
   // Show streaming state (AI is responding, so don't show loading indicator)
   const isStreaming = status === "streaming";
 
-  // Debug products state
-  useEffect(() => {
-    console.log("[QuizPage] Products state updated:", products);
-  }, [products]);
+  // Remove debug products state effect
+  // useEffect(() => {
+  //   console.log("[QuizPage] Products state updated:", products);
+  // }, [products]);
+
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isWaitingForAI || isStreaming) return;
 
     try {
+      // Mark the last assistant message as responded to and clear suggestions
+      const assistantMessages = messages.filter((msg) => msg.role === "assistant");
+      if (assistantMessages.length > 0) {
+        const lastAssistantMessageId = assistantMessages[assistantMessages.length - 1].id;
+        // Mark this message as responded to
+        setRespondedMessages(prev => new Set([...prev, lastAssistantMessageId]));
+        // Immediately clear suggestions from UI
+        setMessageSuggestions(new Map());
+      }
+
       setInput("");
       await sendMessage({
         role: "user",
         parts: [{ text: input, type: "text" }],
       });
-      // setInput("");
       inputRef.current?.focus();
     } catch (err) {
-      console.error("Failed to send message:", err);
+      // Only show user-facing error
       toast.error("Failed to send message. Please try again.");
     }
   };
 
-  const handleSuggestionClick = async (suggestion: QuizSuggestion) => {
+  const handleSuggestionClick = async (suggestion: QuizSuggestion, messageId: string) => {
     if (isWaitingForAI || isStreaming) return;
 
     try {
-      console.log(
-        `[QuizPage] Sending suggestion: "${suggestion.text}" with value: "${suggestion.value}"`
-      );
+      // Mark this message as responded to and clear suggestions
+      setRespondedMessages(prev => new Set([...prev, messageId]));
+      setMessageSuggestions(new Map());
+      
       await sendMessage({
         role: "user",
         parts: [{ text: suggestion.value, type: "text" }],
       });
       inputRef.current?.focus();
     } catch (err) {
-      console.error("Failed to send suggestion:", err);
+      // Only show user-facing error
       toast.error("Failed to send suggestion. Please try again.");
     }
   };
@@ -263,11 +240,11 @@ export default function QuizPage() {
   const resetQuiz = () => {
     setMessages([]);
     setProducts([]); // Clear products
-    setCurrentSuggestions([]); // Clear suggestions
+    setMessageSuggestions(new Map()); // Clear all message suggestions
+    setRespondedMessages(new Set()); // Clear responded messages tracking
     toast.success("Chat cleared!");
     setHasSentInitial(false); // Allow initial AI message to be sent again
     initialMessageSentRef.current = false; // Reset the ref as well
-    console.log("🔄 [QuizPage] Quiz reset - cleared hasSentInitial and ref");
   };
 
   // Helper function to check if message contains active tools
@@ -309,6 +286,7 @@ export default function QuizPage() {
 
                   const content = extractMessageContent(message);
                   const isToolActive = hasActiveTool(message);
+                  const messageSuggestionsList = messageSuggestions.get(message.id) || [];
 
                   // Check if this is the last assistant message and products are available
                   const assistantMessages = messages.filter(
@@ -322,17 +300,7 @@ export default function QuizPage() {
                     message.role === "assistant" &&
                     message.id === lastAssistantMessageId;
 
-                  // Debug info
-                  if (message.role === "assistant") {
-                    console.log(
-                      "[QuizPage] Assistant message:",
-                      message.id,
-                      "isLast:",
-                      message.id === lastAssistantMessageId,
-                      "products:",
-                      products.length
-                    );
-                  }
+                  // Remove debug info
 
                   return (
                     <React.Fragment key={message.id || index}>
@@ -378,11 +346,32 @@ export default function QuizPage() {
                               </Response>
                             </div>
                           )}
+
+                          {/* Show suggestions right under the AI message */}
+                          {message.role === "assistant" && messageSuggestionsList.length > 0 && (
+                            <div className="mt-2 pt-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {messageSuggestionsList.map((suggestion, suggestionIndex) => (
+                                  <Button
+                                    key={suggestionIndex}
+                                    onClick={() => handleSuggestionClick(suggestion, message.id)}
+                                    disabled={isWaitingForAI || isStreaming}
+                                    className="rounded-md px-3 py-1 bg-background border border-foreground/20 shadow-none text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground hover:border-foreground/30 transition-all duration-200"
+                                  >
+                                    {suggestion.text}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* Show products immediately after the last assistant message */}
-                      {isLastAssistantMessage && products.length > 0 && (
+                      {(() => {
+                        const shouldShowProducts = isLastAssistantMessage && products.length > 0;
+                        return shouldShowProducts;
+                      })() && (
                         <ProductDisplay products={products} />
                       )}
                     </React.Fragment>
@@ -434,30 +423,6 @@ export default function QuizPage() {
               />
               <PromptInputToolbar>
                 <div className="flex items-center justify-end gap-2 w-full">
-                  {/* Dynamic Suggestions */}
-                  {currentSuggestions.length > 0 && (
-                    <div className="flex items-center justify-start gap-2 w-full flex-wrap">
-                      {/* Question indicator */}
-                      {/* <div className="text-xs text-foreground/60 font-medium mr-2 px-2 py-1 bg-foreground/5 rounded-md">
-                      {(() => {
-                        const content = messages.length > 0 ? extractMessageContent(messages[messages.length - 1]) : "";
-                        const questionNumber = content ? extractQuestionNumber(content) : null;
-                        return questionNumber ? `Question ${questionNumber} of 9` : "";
-                      })()}
-                    </div> */}
-
-                      {currentSuggestions.map((suggestion, index) => (
-                        <Button
-                          key={index}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          disabled={isWaitingForAI || isStreaming}
-                          className="rounded-md px-3 py-1 bg-background border border-foreground/20 shadow-none text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground hover:border-foreground/30 transition-all duration-200"
-                        >
-                          {suggestion.text}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
                   {messages.length > 0 && (
                     <Button
                       onClick={resetQuiz}

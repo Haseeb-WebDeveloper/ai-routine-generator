@@ -57,8 +57,10 @@ export function getQuizSuggestions(questionNumber: number): QuizSuggestion[] {
       ];
 
     case 6:
-      // Skip suggestions for current routine question
-      return [];
+      // Current routine question
+      return [
+        { text: "No specific routine at the moment.", value: "No specific routine at the moment." },
+      ];
 
     case 7:
       // Time commitment suggestions
